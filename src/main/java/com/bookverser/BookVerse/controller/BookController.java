@@ -3,6 +3,7 @@ package com.bookverser.BookVerse.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMappint("book")
 public class BookController {
 
 }
