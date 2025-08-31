@@ -8,7 +8,7 @@ public class BookVerseApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(BookVerseApplication.class, args);
-		System.out.println("application started");
+		System.out.println("application started  now");
 	}
 
 }
