@@ -32,7 +32,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public BookDto addBook(BookRequest request) {
         String uuid = UUID.randomUUID().toString();
-           
+
         if (bookRepository.existsByIsbn(request.getIsbn())) {
             throw new DuplicateIsbnException("A book with ISBN " + request.getIsbn() + " already exists");
         }
@@ -58,24 +58,24 @@ public class BookServiceImpl implements BookService {
         Book saved = bookRepository.save(book);
 
         return new BookDto(
-        	    saved.getId(),
-        	    saved.getTitle(),
-        	    saved.getAuthor(),
-        	    saved.getDescription(),
-        	    saved.getUuid(),
-        	    saved.getIsbn(),
-        	    saved.getPrice(),
-        	    saved.getStock(),
-        	    saved.getCondition(),
-        	    saved.getImageUrl(),
-        	    saved.getStatus().name(),
-        	    saved.getSeller().getId(),
-        	    saved.getSeller().getName(), // Issue here
-        	    saved.getCategory().getId(),
-        	    saved.getCategory().getName(),
-        	    saved.getCreatedAt(),
-        	    saved.getUpdatedAt()
-        	);
+                saved.getId(),
+                saved.getTitle(),
+                saved.getAuthor(),
+                saved.getDescription(),
+                saved.getUuid(),
+                saved.getIsbn(),
+                saved.getPrice(),
+                saved.getStock(),
+                saved.getCondition(),
+                saved.getImageUrl(),
+                saved.getStatus().name(),
+                saved.getSeller().getId(),
+                saved.getSeller().getName(), // make sure User entity has getName()
+                saved.getCategory().getId(),
+                saved.getCategory().getName(),
+                saved.getCreatedAt(),
+                saved.getUpdatedAt()
+        );
     }
 
     @Override
