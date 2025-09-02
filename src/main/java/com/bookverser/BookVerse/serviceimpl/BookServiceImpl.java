@@ -36,6 +36,7 @@ public class BookServiceImpl implements BookService {
         if (bookRepository.existsByIsbn(request.getIsbn())) {
             throw new DuplicateIsbnException("A book with ISBN " + request.getIsbn() + " already exists");
         }
+
         User seller = userRepository.findById(request.getSellerId())
                 .orElseThrow(() -> new RuntimeException("Seller not found"));
 
