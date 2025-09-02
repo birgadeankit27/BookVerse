@@ -39,7 +39,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles;
+    private Set<Role> role;
     
     @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address cannot exceed 255 characters")
