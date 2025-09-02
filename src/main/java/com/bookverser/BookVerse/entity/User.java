@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -32,9 +33,14 @@ public class User {
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
 
-    @NotBlank(message = "Role is required")
-    private String role;
-
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
+    
     @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address cannot exceed 255 characters")
     private String address;
