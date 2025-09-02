@@ -70,7 +70,7 @@ public class BookServiceImpl implements BookService {
                 saved.getImageUrl(),
                 saved.getStatus().name(),
                 saved.getSeller().getId(),
-                saved.getSeller().getName(), // make sure User entity has getName()
+                saved.getSeller().getName(),
                 saved.getCategory().getId(),
                 saved.getCategory().getName(),
                 saved.getCreatedAt(),
