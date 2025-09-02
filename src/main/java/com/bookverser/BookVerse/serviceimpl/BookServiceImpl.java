@@ -24,7 +24,81 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
+	@Autowired
+	private BookRepository bookRepository;
 
+	@Override
+	public BookDto addBook(BookRequestDto request) {
+		
+		return null;
+	}
+
+	@Override
+	public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice,
+			Double maxPrice) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BookDto getBookById(Long bookId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BookDto updateBook(Long bookId, BookRequestDto request) {
+		System.out.print("this is service")
+		return null;
+	}
+
+	@Override
+	public void deleteBook(Long bookId) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<BookDto> getBooksByCategory(Long categoryId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BookDto updateStock(Long bookId, int stock) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void bulkImportBooks(MultipartFile file) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public List<BookDto> getBooksBySeller(Long sellerId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BookDto featureBook(Long bookId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
