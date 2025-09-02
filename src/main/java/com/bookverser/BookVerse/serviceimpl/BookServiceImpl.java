@@ -41,7 +41,7 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public BookDto updateBook(Long bookId, BookRequestDto request) {
-		System.out.print("")
+		System.out.print("this is service")
 		return null;
 	}
 
