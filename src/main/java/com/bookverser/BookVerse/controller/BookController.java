@@ -9,6 +9,7 @@ import com.bookverser.BookVerse.dto.BookRequest;
 import com.bookverser.BookVerse.service.BookService;
 
 import jakarta.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/books")
@@ -17,14 +18,16 @@ public class BookController {
     @Autowired
     private BookService service;
 
-    @PostMapping
+    @PostMapping("/addBook")
     public ResponseEntity<BookDto> addBook(@Valid @RequestBody BookRequest book) {
         BookDto bookDto = service.addBook(book);
         return ResponseEntity.ok(bookDto);
     }
 
-    @GetMapping
-    public String getBooks() {
-        return "List of books from main branch";
+    @GetMapping("/getBooks")
+    public ResponseEntity<List<BookDto>> getBooks() {
+        // Extract the list from the Page returned by service
+        List<BookDto> books = service.getAllBooks(null, null, null, null, null).getContent();
+        return ResponseEntity.ok(books);
     }
 }
