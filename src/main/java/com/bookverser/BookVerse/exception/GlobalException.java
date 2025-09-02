@@ -17,6 +17,19 @@ public class GlobalException {
 	        error.put("error", ex.getMessage());
 	        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
 	    }
+	 @ExceptionHandler(MethodArgumentNotValidException.class)
+	    public ResponseEntity<Map<String, String>> MethodArgumentNotValid(MethodArgumentNotValidException ex) {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("error", ex.getMessage());
+	        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
+	    }
+	 
+	 @ExceptionHandler(UnauthorizedException.class)
+	    public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("error", ex.getMessage());
+	        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
+	    }
 
 
 }
