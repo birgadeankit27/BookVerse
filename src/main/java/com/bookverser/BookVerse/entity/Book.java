@@ -1,23 +1,49 @@
 package com.bookverser.BookVerse.entity;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "books")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Book {
 
     public enum Status {
-        AVAILABLE,
-        SOLD
+        AVAILABLE, SOLD;
+
+        @JsonValue
+        public String getValue() {
+            return name();
+        }
+
+        @JsonCreator
+        public static Status fromValue(String value) {
+            return valueOf(value.toUpperCase());
+        }
+    }
+
+    public enum Condition {
+        NEW, GOOD, OLD;
+
+        @JsonValue
+        public String getValue() {
+            return name();
+        }
+
+        @JsonCreator
+        public static Condition fromValue(String value) {
+            return valueOf(value.toUpperCase());
+        }
     }
 
     @Id
@@ -44,16 +70,24 @@ public class Book {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
 
-    @NotBlank(message = "Condition is required (e.g., NEW, GOOD, OLD)")
-    @Size(max = 50, message = "Condition cannot exceed 50 characters")
-    @Column(nullable = false, length = 50)
-    private String condition;
+    @NotNull(message = "Condition is required")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private Condition condition = Condition.GOOD;
 
-    @Size(max = 500, message = "Image URL cannot exceed 500 characters")
-    private String imageUrl;
+    @ElementCollection
+    @CollectionTable(name = "book_images", joinColumns = @JoinColumn(name = "book_id"))
+    @Column(name = "image_url", length = 500)
+    @Builder.Default
+    private List<@Size(max = 500, message = "Image URL cannot exceed 500 characters") String> imageUrls = new ArrayList<>();
+
+    @Column(length = 20)
+    private String isbn;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
     private Status status = Status.AVAILABLE;
 
     @PastOrPresent(message = "Created date cannot be in the future")
@@ -67,7 +101,15 @@ public class Book {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    // Lifecycle Callbacks
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "book_categories",
+        joinColumns = @JoinColumn(name = "book_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    @Builder.Default
+    private List<Category> categories = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

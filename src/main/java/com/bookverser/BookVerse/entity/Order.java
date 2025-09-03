@@ -1,48 +1,45 @@
 package com.bookverser.BookVerse.entity;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.PastOrPresent;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Order {
-  
+
     public enum Status {
-        PENDING,
-        SHIPPED,
-        DELIVERED,
-        CANCELLED
+        PENDING, SHIPPED, DELIVERED, CANCELLED
     }
 
     public enum PaymentStatus {
-        PAID,
-        COD,
-        FAILED
+        PAID, COD, FAILED
     }
 
-  
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "buyer_id", nullable = false)
     private User buyer;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "seller_id", nullable = false)
-    private User seller;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal totalPrice;
+
+    @Column(nullable = false, length = 255)
+    private String shippingAddress;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -53,13 +50,15 @@ public class Order {
     private PaymentStatus paymentStatus = PaymentStatus.COD;
 
     @PastOrPresent(message = "Created date cannot be in the future")
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-  
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id")
+    private Cart cart;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
-
-   
 }
