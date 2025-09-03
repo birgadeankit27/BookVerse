@@ -93,8 +93,7 @@ package com.bookverser.BookVerse.security;
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    
-    //second new code
+   //second new code
     
     @Autowired
     private CustomUserDetailsService userDetailsService;
