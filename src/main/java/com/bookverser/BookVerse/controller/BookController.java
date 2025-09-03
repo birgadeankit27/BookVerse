@@ -1,28 +1,34 @@
 package com.bookverser.BookVerse.controller;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.bookverser.BookVerse.dto.BookDto;
+import com.bookverser.BookVerse.dto.BookRequest;
+import com.bookverser.BookVerse.service.BookService;
 
-
-
-
-
+import jakarta.validation.Valid;
+import java.util.List;
 
 @RestController
-
-
-@RequestMapping()
-@RequestMapping("books")
- 
+feature/book/add-api
+@RequestMapping("/api/books")
 public class BookController {
 
-	@PostMapping("/api/books")
-	public String addBook(@RequestBody BookDto book) {
-		return null;
-		
-	}
+    @Autowired
+    private BookService service;
+
+    @PostMapping("/addBook")
+    public ResponseEntity<BookDto> addBook(@Valid @RequestBody BookRequest book) {
+        BookDto bookDto = service.addBook(book);
+        return ResponseEntity.ok(bookDto);
+    }
+
+    @GetMapping("/getBooks")
+    public ResponseEntity<List<BookDto>> getBooks() {
+        // Extract the list from the Page returned by service
+        List<BookDto> books = service.getAllBooks(null, null, null, null, null).getContent();
+        return ResponseEntity.ok(books);
+    }
 }

@@ -1,8 +1,10 @@
 package com.bookverser.BookVerse.service;
 import com.bookverser.BookVerse.dto.BookDto;
-import com.bookverser.BookVerse.dto.BookRequestDto;
+import com.bookverser.BookVerse.dto.BookRequest;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.List;
 public interface BookService {
 
     // 1. Add Book
-    BookDto addBook(BookRequestDto request);
+    BookDto addBook(BookRequest request);
 
     // 2. Get All Books with pagination, sorting, filtering
     Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice);
@@ -19,7 +21,7 @@ public interface BookService {
     BookDto getBookById(Long bookId);
 
     // 4. Update Book
-    BookDto updateBook(Long bookId, BookRequestDto request);
+    BookDto updateBook(Long bookId, BookRequest request);
 
     // 5. Delete Book (Soft Delete)
     void deleteBook(Long bookId);
