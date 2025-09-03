@@ -18,5 +18,8 @@ public class GlobalException {
 	        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
 	    }
 
-
+	  @ExceptionHandler(UsernameNotFoundException.class)
+	    public ResponseEntity<String> handleUserNotFound(UsernameNotFoundException ex) {
+	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+	    }
 }
