@@ -92,65 +92,7 @@ package com.bookverser.BookVerse.security;
 	public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-//
-//	    @Autowired
-//	    private JwtAuthenticationFilter jwtFilter;
-//
-//	    @Autowired
-//	    private CustomUserDetailsService userDetailsService;
-//
-//	    @Autowired
-//	    private JwtAuthenticationEntryPoint entryPoint;
-//
-//	    @Bean
-//	    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//	        logger.info("Configuring Spring Security filter chain");
-//	        return http
-//	                .csrf(csrf -> csrf.disable())
-//	                .authorizeHttpRequests(auth -> auth
-//	                    .requestMatchers("/authController/login","/authController/registeruser").permitAll() // public endpoints // "/auth/registeruser"
-//	                    .anyRequest().authenticated()
-//	                )
-//	                .exceptionHandling(ex -> ex.authenticationEntryPoint(entryPoint))
-//	                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//	                .authenticationProvider(authenticationProvider())
-//	                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-//	                .build();
-//	    }
-//
-//	    @Bean
-//	    public CorsConfigurationSource corsConfigurationSource() {
-//	        CorsConfiguration configuration = new CorsConfiguration();
-//	        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Adjust for your frontend URL
-//	        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//	        configuration.setAllowedHeaders(List.of("*"));
-//	        configuration.setAllowCredentials(true);
-//	        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//	        source.registerCorsConfiguration("/**", configuration);
-//	        logger.info("CORS configuration applied for allowed origins: {}", configuration.getAllowedOrigins());
-//	        return source;
-//	    }
-//
-//	    @Bean
-//	    public PasswordEncoder passwordEncoder() {
-//	        logger.debug("Initializing BCryptPasswordEncoder");
-//	        return new BCryptPasswordEncoder();
-//	    }
-//
-//	    @Bean
-//	    public AuthenticationProvider authenticationProvider() {
-//	        logger.debug("Configuring AuthenticationProvider with UserDetailsService and PasswordEncoder");
-//	        return new DaoAuthenticationProvider() {{
-//	            setUserDetailsService(userDetailsService);
-//	            setPasswordEncoder(passwordEncoder());
-//	        }};
-//	    }
-//
-//	    @Bean
-//	    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-//	        logger.debug("Initializing AuthenticationManager");
-//	        return config.getAuthenticationManager();
-//	    }
+
     
     //second new code
     
@@ -199,7 +141,7 @@ package com.bookverser.BookVerse.security;
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // frontend URL
+        configuration.setAllowedOrigins(List.of("http://localhost:3000")); 
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
