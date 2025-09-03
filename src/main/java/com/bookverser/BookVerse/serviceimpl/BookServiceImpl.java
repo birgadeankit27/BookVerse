@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.BookRequestDto;
+
 import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.service.BookService;
 
@@ -18,7 +19,11 @@ import com.bookverser.BookVerse.service.BookService;
 public class BookServiceImpl implements BookService {
 	
 	@Autowired
+
+	BookRepository bookrepository;
+
 	private BookRepository bookRepository;
+
 
 	@Override
 	public BookDto addBook(BookRequestDto request) {
@@ -29,7 +34,7 @@ public class BookServiceImpl implements BookService {
 	@Override
 	public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice,
 			Double maxPrice) {
-		// TODO Auto-generated method stub
+		
 		return null;
 	}
 
@@ -51,11 +56,7 @@ public class BookServiceImpl implements BookService {
 		
 	}
 
-	@Override
-	public List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 
 	@Override
 	public List<BookDto> getBooksByCategory(Long categoryId) {
@@ -91,6 +92,12 @@ public class BookServiceImpl implements BookService {
 	public BookDto featureBook(Long bookId) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice) {
+		 List<BookDto>  bookDtos=  bookrepository.searchBooks(keyword,minPrice ,maxPrice);
+		return bookDtos;
 	}
 
 }

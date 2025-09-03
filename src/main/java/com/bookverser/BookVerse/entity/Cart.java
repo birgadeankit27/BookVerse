@@ -1,9 +1,10 @@
 package com.bookverser.BookVerse.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import lombok.*;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,24 +23,21 @@ public class Cart {
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
-    // Buyer who owns this cart
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "buyer_id", nullable = false)
     private User buyer;
 
-    // Books added to cart
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-        name = "cart_books",
-        joinColumns = @JoinColumn(name = "cart_id"),
-        inverseJoinColumns = @JoinColumn(name = "book_id")
-    )
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Book> books = new ArrayList<>();
+    private List<CartItem> cartItems = new ArrayList<>();
 
-    // Creation timestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @NotNull(message = "Total price is required")
+    @Column(nullable = false, precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal totalPrice = BigDecimal.ZERO;
+
     @PastOrPresent(message = "Created date cannot be in the future")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
