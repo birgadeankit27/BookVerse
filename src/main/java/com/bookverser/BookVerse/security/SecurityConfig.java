@@ -92,8 +92,7 @@ package com.bookverser.BookVerse.security;
 	public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-
-   //second new code
+//second new code
     
     @Autowired
     private CustomUserDetailsService userDetailsService;
