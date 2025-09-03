@@ -2,6 +2,7 @@ package com.bookverser.BookVerse.repository;
 
 
 
+
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,12 +16,17 @@ import com.bookverser.BookVerse.entity.Book;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long>{
   
-//	@Query("Select b from Book b where lower(b.title) Like(lower(concat('%','keyword','%d')))"+
-//	     "and(:minPrice is null or b.price>:minPrice)"+
-//	     "and(:minPrice is null or b.price>:minPrice)")
-//	List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice);
-//   
+
 	
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.bookverser.BookVerse.dto.BookDto;
+
+@Repository
+public interface BookRepository extends JpaRepository<BookDto, Long>{
+
 
 	@Query("SELECT b FROM Book b " +
 		       "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

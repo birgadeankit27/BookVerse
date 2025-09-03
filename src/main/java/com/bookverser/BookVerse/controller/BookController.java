@@ -1,4 +1,5 @@
 package com.bookverser.BookVerse.controller;
+
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,27 @@ import com.bookverser.BookVerse.serviceimpl.BookServiceImpl;
 
 @RestController
 @RequestMapping("/api/books/")
+
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.bookverser.BookVerse.dto.BookDto;
+
+
+
+
+
+
+@RestController
+
+
+@RequestMapping()
+@RequestMapping("books")
+ 
+
 public class BookController {
 	
 	@Autowired
@@ -31,4 +53,9 @@ public class BookController {
 	
 	
 
+	@PostMapping("/api/books")
+	public String addBook(@RequestBody BookDto book) {
+		return null;
+		
+	}
 }

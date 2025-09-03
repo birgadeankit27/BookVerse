@@ -19,7 +19,11 @@ import com.bookverser.BookVerse.service.BookService;
 public class BookServiceImpl implements BookService {
 	
 	@Autowired
+
 	BookRepository bookrepository;
+
+	private BookRepository bookRepository;
+
 
 	@Override
 	public BookDto addBook(BookRequestDto request) {
@@ -42,7 +46,7 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public BookDto updateBook(Long bookId, BookRequestDto request) {
-		// TODO Auto-generated method stub
+		System.out.print("this is service")
 		return null;
 	}
 
