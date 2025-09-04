@@ -36,7 +36,8 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
-	    Page<Book> books = bookRepository.findAll(pageable); // for now, just fetch all
+	    System.out.println("hello");
+		Page<Book> books = bookRepository.findAll(pageable); // for now, just fetch all
 
 	    return books.map(BookDto::fromEntity); // convert entity → dto
 	}
