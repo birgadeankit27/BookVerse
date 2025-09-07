@@ -1,37 +1,80 @@
 package com.bookverser.BookVerse.config;
 
-import java.util.Set;
-
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
-@Configuration
+import java.util.HashSet;
+import java.util.Set;
+
+@Component
 public class DataSeeder {
-	 @Bean
-	    CommandLineRunner initData(RoleRepository roleRepo, UserRepository userRepo) {
-	        return args -> {
-	        	Role adminRole = roleRepo.findByName("ADMIN")
-	        	        .orElseGet(() -> roleRepo.save(new Role(null, "ADMIN")));
-	            Role sellerRole = roleRepo.findByName("SELLER").orElseGet(() -> roleRepo.save(new Role(null, "SELLER")));
-	            Role customerRole = roleRepo.findByName("CUSTOMER").orElseGet(() -> roleRepo.save(new Role(null, "CUSTOMER")));
 
-	            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    @Autowired
+    private RoleRepository roleRepository;
 
-	            if (userRepo.count() == 0) {
-	                userRepo.save(new User(null, "Admin User", "admin@example.com", encoder.encode("admin123"),
-	                        Set.of(adminRole), "Admin Address", "1234567890", null));
-	                userRepo.save(new User(null, "Seller User", "seller@example.com", encoder.encode("seller123"),
-	                        Set.of(sellerRole), "Seller Address", "9876543210", null));
-	                userRepo.save(new User(null, "Customer User", "customer@example.com", encoder.encode("customer123"),
-	                        Set.of(customerRole), "Customer Address", "5555555555", null));
-	            }
-	        };
-	    }
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @PostConstruct
+    public void init() {
+        // ✅ Create roles if they don't exist
+        String[] roleNames = {"ROLE_ADMIN", "ROLE_SELLER", "ROLE_CUSTOMER"};
+        for (String roleName : roleNames) {
+            roleRepository.findByName(roleName)
+                    .orElseGet(() -> roleRepository.save(new Role(roleName)));
+        }
+
+        // ✅ Create default Admin user
+        if (!userRepository.existsByEmail("admin@bookverse.com")) {
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                    .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"));
+            Role sellerRole = roleRepository.findByName("ROLE_SELLER")
+                    .orElseThrow(() -> new RuntimeException("ROLE_SELLER not found"));
+
+            Set<Role> adminRoles = new HashSet<>();
+            adminRoles.add(adminRole);
+            adminRoles.add(sellerRole);
+
+            User admin = User.builder()
+                    .name("admin")
+                    .email("admin@bookverse.com")
+                    .password(passwordEncoder.encode("admin123"))
+                    .roles(adminRoles)
+                    .build();
+
+            userRepository.save(admin);
+            System.out.println("✅ Created default admin: email='admin@bookverse.com', password='admin123'");
+        }
+
+        // ✅ Create default regular user
+        if (!userRepository.existsByEmail("ankit@bookverse.com")) {
+            Role sellerRole = roleRepository.findByName("ROLE_SELLER")
+                    .orElseThrow(() -> new RuntimeException("ROLE_SELLER not found"));
+            Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                    .orElseThrow(() -> new RuntimeException("ROLE_CUSTOMER not found"));
+
+            Set<Role> userRoles = new HashSet<>();
+            userRoles.add(sellerRole);
+            userRoles.add(customerRole);
+
+            User user = User.builder()
+                    .name("ankit")
+                    .email("ankit@bookverse.com")
+                    .password(passwordEncoder.encode("securePassword"))
+                    .roles(userRoles)
+                    .build();
+
+            userRepository.save(user);
+            System.out.println("✅ Created default user: email='ankit@bookverse.com', password='securePassword'");
+        }
+    }
 }

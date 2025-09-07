@@ -1,61 +1,50 @@
 package com.bookverser.BookVerse.controller;
 
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import com.bookverser.BookVerse.dto.BookDto;
-import com.bookverser.BookVerse.serviceimpl.BookServiceImpl;
+import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
+import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
+import com.bookverser.BookVerse.repository.UserRepository;
+
+import com.bookverser.BookVerse.serviceimpl.*;
+
+import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/books/")
-
-
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.bookverser.BookVerse.dto.BookDto;
-
-
-
-
-
-
-@RestController
-
-
-@RequestMapping()
-@RequestMapping("books")
- 
-
+@RequestMapping("/api/books")
 public class BookController {
-	
-	@Autowired
-	BookServiceImpl serviceimpl;
-	
-	@GetMapping("/search")
-	 ResponseEntity bookSearch(@RequestParam String keyword,@RequestParam Double minPrice, @RequestParam Double maxPrice){
-		 List<BookDto> BookDto = serviceimpl.searchBooks(keyword, minPrice, maxPrice);
-		 if(BookDto.isEmpty()) {
-			 return new ResponseEntity(HttpStatus.NO_CONTENT);
-		 }
-		return new ResponseEntity(BookDto, HttpStatus.OK);
 
-		  
-	  }
-	
-	
+    @Autowired
+    private BookServiceImpl bookServiceImpl;
 
-	@PostMapping("/api/books")
-	public String addBook(@RequestBody BookDto book) {
-		return null;
-		
-	}
+    @Autowired
+    private UserRepository userRepository;
+
+    @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
+    public ResponseEntity<?> addBook(@Valid @RequestBody CreateBookRequestDTO request,
+                                     Authentication authentication) {
+
+    	   BookDto createdBook = bookServiceImpl.addBook(request);
+           return ResponseEntity.ok(createdBook);
+}
+    
+    
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('CUSTOMER','SELLER','ADMIN')")
+    public ResponseEntity<List<BookDto>> searchBooks(@Valid SearchBooksRequestDTO request) {
+        List<BookDto> books = bookServiceImpl.searchBooks(request);
+        if (books.isEmpty()) {
+            return ResponseEntity.noContent().build(); 
+        }
+        return ResponseEntity.ok(books);
+    }
 }
