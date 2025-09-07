@@ -19,7 +19,17 @@ public class GlobalException {
 	    }
 
 	  @ExceptionHandler(UsernameNotFoundException.class)
-	    public ResponseEntity<String> handleUserNotFound(UsernameNotFoundException ex) {
+	    public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
 	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+	    }
+	  
+	  @ExceptionHandler(MethodArgumentNotValidException.class)
+	    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
+	        return new ResponseEntity<>("Validation failed: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+	    }
+	  
+	  @ExceptionHandler(UnauthorizedException.class)
+	    public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
+	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
 	    }
 }

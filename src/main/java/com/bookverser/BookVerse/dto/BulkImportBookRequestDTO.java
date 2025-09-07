@@ -1,18 +1,21 @@
 package com.bookverser.BookVerse.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
-
 /**
- * BookDTO
- * DTO for Book responses, used in get, update, and feature operations.
- * Includes all fields needed for API responses.
+ * BulkImportBookRequestDTO
+ * DTO for bulk importing books (used in bulkImportBooks).
+ * Represents a single book entry in the import file.
  */
 @Data
-public class BookDto {
-
-    private Long id;
+public class BulkImportBookRequestDTO {
 
     @NotBlank(message = "Title is mandatory")
     @Size(max = 255, message = "Title must be less than 255 characters")
@@ -43,15 +46,6 @@ public class BookDto {
 
     private String imageUrl;
 
-    @NotNull(message = "Status is mandatory")
-    @Pattern(regexp = "AVAILABLE|SOLD", message = "Status must be AVAILABLE or SOLD")
-    private String status;
-
-    @NotNull(message = "Seller ID is mandatory")
-    private Long sellerId;
-
     @NotNull(message = "Category ID is mandatory")
     private Long categoryId;
-
-    private boolean isFeatured; // For Feature Book operation
 }

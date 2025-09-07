@@ -8,6 +8,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Order Entity
+ * Represents an order in the database, including buyer, items, and shipping details.
+ * - Depends on the books table for order items (via OrderItem entity).
+ * - Uses cascade and orphanRemoval to manage OrderItem lifecycle.
+ */
 @Entity
 @Table(name = "orders")
 @Data

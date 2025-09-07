@@ -1,18 +1,32 @@
 package com.bookverser.BookVerse.dto;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+/**
+ * UserDTO
+ * Data Transfer Object for User responses.
+ * Hides sensitive fields like password.
+ */
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class UserDto {
-	private Long id;
-    private String name;
-    private String email;
-    private String role;   // BUYER / SELLER / ADMIN
-    private String address;
-    private String phone;
 
+    private Long id;
+
+    @NotBlank
+    @Size(min = 2, max = 100)
+    private String name;
+
+    @NotBlank
+    @Email
+    private String email;
+
+    @NotNull
+    private String role; // BUYER / SELLER / ADMIN
+
+    @Size(max = 255)
+    private String address;
+
+    @Pattern(regexp = "^\\+?[0-9]{10,15}$")
+    private String phone;
 }
