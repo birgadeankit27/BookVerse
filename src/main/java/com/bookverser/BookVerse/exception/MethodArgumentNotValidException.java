@@ -8,4 +8,8 @@ public class MethodArgumentNotValidException extends RuntimeException {
 		super(msg);
 	}
 
+	public void getBindingResult() {
+		// TODO Auto-generated method stub
+		
+	}
 }
