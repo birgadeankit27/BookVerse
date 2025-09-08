@@ -1,5 +1,13 @@
 package com.bookverser.BookVerse.service;
 
-public interface UserService {
+import com.bookverser.BookVerse.dto.SignupDto;
+import com.bookverser.BookVerse.entity.User;
+import com.bookverser.BookVerse.dto.LoginRequest;
+import com.bookverser.BookVerse.dto.LoginResponse;
 
+public interface UserService {
+    String register(SignupDto signupDto);
+    String registerAdmin(SignupDto signupDto);
+    User findByEmail(String email);
+    LoginResponse processLogin(LoginRequest loginRequest, String token);
 }
