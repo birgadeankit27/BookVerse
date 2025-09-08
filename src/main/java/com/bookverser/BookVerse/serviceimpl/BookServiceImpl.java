@@ -125,7 +125,6 @@ public class BookServiceImpl implements BookService {
 	public BookDto getBookById(Long bookId) {
 		Book book = bookRepository.findById(bookId)
 				.orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
-
 		return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
 				book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
 	}
@@ -166,8 +165,12 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-		// TODO
-		return null;
+		Book book = bookRepository.findById(bookId)
+				.orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+		book.setStock(request.getStock());
+		bookRepository.save(book);
+		return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+				book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
 	}
 
 	@Override

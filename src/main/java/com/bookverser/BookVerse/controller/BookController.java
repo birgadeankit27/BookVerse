@@ -52,5 +52,13 @@ public class BookController {
 		BookDto bookdto = bookServiceImpl.getBookById(bookId);
 		return ResponseEntity.ok(bookdto);
 	}
+	
+	@PatchMapping("/{bookId}/stock")
+	public ResponseEntity<BookDto> updateStock(@PathVariable Long bookId,
+			@RequestBody @Valid UpdateStockRequestDTO request) {
+		BookDto bookdto = bookServiceImpl.updateStock(bookId, request);
+		return ResponseEntity.ok(bookdto);
+	}
+
 
 }
