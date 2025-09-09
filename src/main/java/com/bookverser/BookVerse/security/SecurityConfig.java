@@ -28,21 +28,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**")) // Disable CSRF for /api/books
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/cart/**", "/api/orders/**")) // Disable CSRF for APIs
             .authorizeHttpRequests(auth -> auth
+                // Auth endpoints
                 .requestMatchers("/auth/login", "/auth/register").permitAll() // Public access
-                .requestMatchers("/auth/register-admin").hasRole("ADMIN") // Restrict to ROLE_ADMIN
-                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // POST for adding books
-                .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN") // GET for retrieving books
+                .requestMatchers("/auth/register-admin").hasRole("ADMIN") // Admin-only registration
+
+                // Book endpoints
+                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Add books
+                .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN") // Get books
+                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Update books
+                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Delete books
+
+                // Cart endpoints
+                .requestMatchers("/api/carts/**").hasRole("CUSTOMER") // Only buyers can manage cart
+
+                // Order endpoints
+                .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN") // Customers and admin can access orders
+
                 .anyRequest().authenticated() // All other endpoints require authentication
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless for JWT
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless JWT
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {

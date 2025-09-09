@@ -141,22 +141,7 @@ public class BookServiceImpl implements BookService {
 		// TODO
 	}
 
-	@Override
-	public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
-		List<Book> books = bookRepository.searchBooks(request.getKeyword(), request.getMinPrice(),
-				request.getMaxPrice());
-
-		if (books.isEmpty()) {
-			return List.of(); // Controller can return 204
-		}
-
-		return books.stream().map(book -> {
-			BookDto dto = modelMapper.map(book, BookDto.class);
-			dto.setCategoryId(book.getCategory().getId());
-			dto.setSellerId(book.getSeller().getId());
-			return dto;
-		}).collect(Collectors.toList());
-	}
+	
 
 	@Override
 	public List<BookDto> getBooksByCategory(Long categoryId) {
@@ -190,6 +175,30 @@ public class BookServiceImpl implements BookService {
 	@Override
 	public BookDto featureBook(Long bookId) {
 		// TODO
+		return null;
+	}
+
+	@Override
+	public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<BookDto> searchBooks(String title, String author, String isbn) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<BookDto> sortBooks(String sortBy) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 }

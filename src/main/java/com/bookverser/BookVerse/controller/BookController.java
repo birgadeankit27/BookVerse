@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
-import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
-import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
+
 import com.bookverser.BookVerse.repository.UserRepository;
 
 import com.bookverser.BookVerse.serviceimpl.*;
@@ -37,15 +36,7 @@ public class BookController {
 		return ResponseEntity.ok(createdBook);
 	}
 
-	@GetMapping("/search")
-	@PreAuthorize("hasAnyRole('CUSTOMER','SELLER','ADMIN')")
-	public ResponseEntity<List<BookDto>> searchBooks(@Valid SearchBooksRequestDTO request) {
-		List<BookDto> books = bookServiceImpl.searchBooks(request);
-		if (books.isEmpty()) {
-			return ResponseEntity.noContent().build();
-		}
-		return ResponseEntity.ok(books);
-	}
+
 
 	@GetMapping("/{bookId}")
 	public ResponseEntity<BookDto> getBookById(@PathVariable Long bookId) {
