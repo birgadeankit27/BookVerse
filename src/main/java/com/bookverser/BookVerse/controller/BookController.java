@@ -50,6 +50,12 @@ public class BookController {
 		BookDto bookdto = bookServiceImpl.updateStock(bookId, request);
 		return ResponseEntity.ok(bookdto);
 	}
+	
+	@GetMapping("/category/{categoryName}")
+    public ResponseEntity<List<BookDto>> getBooksByCategory(@PathVariable String categoryName) {
+        List<BookDto> books = bookServiceImpl.getBooksByCategory(categoryName);
+        return ResponseEntity.ok(books);
+    }
 
 
 
