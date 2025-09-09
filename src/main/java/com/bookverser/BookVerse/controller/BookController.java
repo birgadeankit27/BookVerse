@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
-
+import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
 import com.bookverser.BookVerse.repository.UserRepository;
 
 import com.bookverser.BookVerse.serviceimpl.*;
@@ -43,5 +43,14 @@ public class BookController {
 		BookDto bookdto = bookServiceImpl.getBookById(bookId);
 		return ResponseEntity.ok(bookdto);
 	}
+	
+	@PatchMapping("/{bookId}/stock")
+	public ResponseEntity<BookDto> updateStock(@PathVariable Long bookId,
+			@RequestBody @Valid UpdateStockRequestDTO request) {
+		BookDto bookdto = bookServiceImpl.updateStock(bookId, request);
+		return ResponseEntity.ok(bookdto);
+	}
+
+
 
 }
