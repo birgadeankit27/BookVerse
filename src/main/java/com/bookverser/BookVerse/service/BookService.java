@@ -92,7 +92,7 @@ public interface BookService {
      * @return List<BookDTO> of books in the category.
      * @throws ResourceNotFoundException if category not found (404).
      */
-    List<BookDto> getBooksByCategory(Long categoryId);
+    List<BookDto> getBooksByCategory(String categoryName);
 
     /**
      * Update book stock with optimistic locking (BOOK:SELLER:UPDATE-STOCK).
