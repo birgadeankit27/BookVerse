@@ -147,4 +147,21 @@ public interface BookService {
      * @throws ResourceNotFoundException if book not found (404).
      */
     BookDto featureBook(Long bookId);
+    
+    
+    
+    List<BookDto> searchBooks(String title, String author, String isbn);
+
+    /**
+     * Filter books by category, price range, and location
+     */
+    List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location);
+
+    /**
+     * Sort books by latest, price, or rating
+     */
+    List<BookDto> sortBooks(String sortBy);
+    
+    
+ 
 }
