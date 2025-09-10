@@ -3,11 +3,16 @@ package com.bookverser.BookVerse.serviceimpl;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
+import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.UserService;
+
+import jakarta.transaction.Transactional;
+
+import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,15 +27,20 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ModelMapper modelMapper;
+
 
     public UserServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.modelMapper = modelMapper;
     }
-
+     
+    @Transactional
     @Override
     public String register(SignupDto signupDto) {
         // Check if email already exists
@@ -54,7 +64,11 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(signupDto.getPassword()))
                 .address(signupDto.getAddress())
                 .phone(signupDto.getPhone())
+                .city(signupDto.getCity() != null ? signupDto.getCity() : "Unknown")
+                .state(signupDto.getState() != null ? signupDto.getState() : "Unknown")
+                .country(signupDto.getCountry() != null ? signupDto.getCountry() : "Unknown")
                 .roles(new HashSet<>(Set.of(role)))
+                .isActive(true)
                 .build();
 
         userRepository.save(user);
@@ -90,22 +104,54 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    @Override
-    public LoginResponse processLogin(LoginRequest loginRequest, String token) {
-        // Get User entity
-        User user = findByEmail(loginRequest.getEmail());
+    
 
-        // Prepare roles
-        List<String> roles = user.getRoles().stream()
+	@Override
+	public UserDto getUserByEmail(String email) {
+		 User user = userRepository.findByEmail(email)
+	                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+	      return mapToDto(user);
+	      
+	        // ✅ Use ModelMapper instead of mapToDto
+	       // return modelMapper.map(user, UserDto.class);
+	    }
+//	  ✅ Helper method to map Entity → DTO
+	private UserDto mapToDto(User user) {
+        String roles = user.getRoles().stream()
                 .map(Role::getName)
-                .collect(Collectors.toList());
+                .reduce((r1, r2) -> r1 + ", " + r2) // Join roles into single string
+                .orElse("USER");
 
-        return new LoginResponse(
-                token,
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                roles
-        );
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        dto.setEmail(user.getEmail());
+        dto.setRole(roles);
+        dto.setAddress(user.getAddress());
+        dto.setPhone(user.getPhone());
+        return dto;
     }
+
+	@Override
+	public LoginResponse processLogin(LoginRequest loginRequest, String accessToken, String refreshToken) {
+		 User user = userRepository.findByEmail(loginRequest.getEmail())
+	                .orElseThrow(() -> new RuntimeException("User not found with email: " + loginRequest.getEmail()));
+
+	        // Prepare roles
+	        List<String> roles = user.getRoles().stream()
+	                .map(Role::getName)
+	                .collect(Collectors.toList());
+
+	        return new LoginResponse(
+	                accessToken,
+	                refreshToken,
+	                user.getId(),
+	                user.getEmail(),
+	                user.getName(),
+	                roles
+	        );
+	}
+
+
+	
 }
