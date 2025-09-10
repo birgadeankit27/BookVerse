@@ -47,4 +47,13 @@ public class BookController {
         }
         return ResponseEntity.ok(books);
     }
+    
+ // ------------------- Get Books by Seller -------------------
+    @GetMapping("/seller/{sellerId}")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public ResponseEntity<List<BookDto>> getBooksBySeller(@PathVariable Long sellerId) {
+        List<BookDto> books = bookServiceImpl.getBooksBySeller(sellerId);
+        return ResponseEntity.ok(books);
+    }
+
 }

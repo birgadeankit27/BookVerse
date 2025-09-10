@@ -23,6 +23,8 @@ import com.bookverser.BookVerse.entity.Category;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.CategoryNotFoundException;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
+import com.bookverser.BookVerse.exception.ResourceNotFoundException;
+import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.repository.CategoryRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
@@ -46,11 +48,11 @@ public class BookServiceImpl implements BookService {
     @Autowired
     private ModelMapper modelMapper;
 
-   
+    // ------------------- Add Book -------------------
     @Override
     @Transactional
     public BookDto addBook(CreateBookRequestDTO request) {
-    	if (bookRepository.existsByIsbn(request.getIsbn())) {
+        if (bookRepository.existsByIsbn(request.getIsbn())) {
             throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
         }
 
@@ -100,7 +102,7 @@ public class BookServiceImpl implements BookService {
         return bookDto;
     }
 
-    // Helper method to get authenticated seller
+    // Helper: Get authenticated seller
     private User getAuthenticatedSeller() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -112,32 +114,75 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
     }
 
-    // ------------------- Other methods (stubs) -------------------
+    // ------------------- Get Books By Seller -------------------
+    
+    @Override
+    public List<BookDto> getBooksBySeller(Long sellerId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
 
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
+        // Check if user is the same seller OR is an admin
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin && !userDetails.getId().equals(sellerId)) {
+            throw new UnauthorizedException("You are not allowed to access books of another seller");
+        }
+
+        List<Book> books = bookRepository.findBySeller_Id(sellerId);
+
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException("No books found for seller with ID: " + sellerId);
+        }
+
+        return books.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+
+    private BookDto convertToDto(Book book) {
+        BookDto dto = new BookDto();
+        dto.setId(book.getId());
+        dto.setIsbn(book.getIsbn());
+        dto.setTitle(book.getTitle());
+        dto.setAuthor(book.getAuthor());
+        dto.setPrice(book.getPrice());
+        dto.setDescription(book.getDescription());
+        dto.setImageUrl(book.getImageUrl());
+        dto.setCondition(book.getCondition());
+        dto.setStatus(book.getStatus());
+        dto.setFeatured(book.isFeatured());
+        dto.setStock(book.getStock());
+        dto.setCategoryId(book.getCategory().getId());
+        dto.setSellerId(book.getSeller().getId());
+        return dto;
+    }
+
+    // ------------------- Other Methods (Stubs) -------------------
     @Override
     public Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice, Double maxPrice) {
-        // TODO: implement filtering and pagination
         return null;
     }
 
     @Override
     public BookDto getBookById(Long bookId) {
-        // TODO
         return null;
     }
 
     @Override
     public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
-        // TODO
         return null;
     }
 
     @Override
     public void deleteBook(Long bookId) {
-        // TODO
     }
 
-  
     @Override
     public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
         List<Book> books = bookRepository.searchBooks(
@@ -147,7 +192,7 @@ public class BookServiceImpl implements BookService {
         );
 
         if (books.isEmpty()) {
-            return List.of(); // Controller can return 204
+            return List.of();
         }
 
         return books.stream()
@@ -160,40 +205,27 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
-
-
     @Override
     public List<BookDto> getBooksByCategory(Long categoryId) {
-        // TODO
         return null;
     }
 
     @Override
     public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-        // TODO
         return null;
     }
 
     @Override
     public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
-        // TODO
         return null;
     }
 
     @Override
     public void bulkImportBooks(MultipartFile file) throws IOException {
-        // TODO
-    }
-
-    @Override
-    public List<BookDto> getBooksBySeller(Long sellerId) {
-        // TODO
-        return null;
     }
 
     @Override
     public BookDto featureBook(Long bookId) {
-        // TODO
         return null;
     }
 }

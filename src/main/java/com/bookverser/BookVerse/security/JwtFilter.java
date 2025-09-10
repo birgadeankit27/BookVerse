@@ -37,11 +37,12 @@ public class JwtFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         
         // Skip filter ONLY for public /auth endpoints (login and register)
-        // Allow JWT processing for /register-admin and other secured /auth endpoints
+       //  Allow JWT processing for /register-admin and other secured /auth endpoints
         if (requestURI.equals("/auth/login") || requestURI.equals("/auth/register")) {
             filterChain.doFilter(request, response);
             return;
         }
+      
 
         final String authHeader = request.getHeader("Authorization");
         String token = null;

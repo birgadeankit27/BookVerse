@@ -29,6 +29,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**")) // Disable CSRF for /api/books
+        	
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/login", "/auth/register").permitAll() // Public access
                 .requestMatchers("/auth/register-admin").hasRole("ADMIN") // Restrict to ROLE_ADMIN

@@ -24,7 +24,9 @@ public interface BookRepository extends JpaRepository<Book, Long>{
 	    List<Book> searchBooks(@Param("keyword") String keyword,
 	                           @Param("minPrice") Double minPrice,
 	                           @Param("maxPrice") Double maxPrice);
+	    
+	    List<Book> findBySeller_Id(Long sellerId);
 
-
-	
+	    
 }
+
