@@ -121,13 +121,15 @@ public class BookServiceImpl implements BookService {
 
     // ------------------- Other methods (stubs) -------------------
 
-	@Override
-	public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
-	    System.out.println("hello");
-		Page<Book> books = bookRepository.findAll(pageable); // for now, just fetch all
+    @Override
+    public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
+        System.out.println("hello");
 
-	    return books.map(BookDto::fromEntity); // convert entity → dto
-	}
+        Page<Book> books = bookRepository.findAll(pageable); // You can later add filters for category, author, etc.
+
+        // Convert Page<Book> → Page<BookDto> using ModelMapper
+        return books.map(book -> modelMapper.map(book, BookDto.class));
+    }
 
 
     @Override
@@ -188,32 +190,33 @@ public class BookServiceImpl implements BookService {
     @Value("${book.upload.dir}")
     private String uploadDir;
 
-	@Override
-	public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
-	    // 1. Fetch book
-	    Book book = bookRepository.findById(bookId)
-	            .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
+    @Override
+    public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+        // 1. Fetch book
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found with id: " + bookId));
 
-	    // 2. Ensure upload directory exists
-	    File dir = new File(uploadDir);
-	    if (!dir.exists()) {
-	        dir.mkdirs();
-	    }
+        // 2. Ensure upload directory exists
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
 
-	    // 3. Generate unique filename
-	    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-	    Path filePath = Paths.get(uploadDir, fileName);
+        // 3. Generate unique filename
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
 
-	    // 4. Save file to server
-	    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        // 4. Save file to server
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-	    // 5. Update book imageUrl (mapped to /uploads/**)
-	    book.setImageUrl("/uploads/" + fileName);
-	    bookRepository.save(book);
+        // 5. Update book imageUrl (mapped to /uploads/**)
+        book.setImageUrl("/uploads/" + fileName);
+        bookRepository.save(book);
 
-	    // 6. Convert Book -> BookDto (assuming you have a mapper)
-	    return BookDto.fromEntity(book);
-	}
+        // 6. Convert Book -> BookDto using ModelMapper
+        return modelMapper.map(book, BookDto.class);
+    }
+
 
     @Override
     public void bulkImportBooks(MultipartFile file) throws IOException {

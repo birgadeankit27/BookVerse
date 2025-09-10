@@ -1,6 +1,6 @@
 package com.bookverser.BookVerse.dto;
 
-import com.bookverser.BookVerse.entity.Book;
+
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -57,17 +57,6 @@ public class BookDto {
 
     private boolean isFeatured; // For Feature Book operation
     
-    public static BookDto fromEntity(Book book) {
-        BookDto dto = new BookDto();
-        dto.setId(book.getId());
-        dto.setTitle(book.getTitle());
-        dto.setAuthor(book.getAuthor());
-        dto.setDescription(book.getDescription());
-        dto.setPrice(book.getPrice());
-        dto.setCondition(book.getCondition());
-        dto.setImageUrl(book.getImageUrl());
-        dto.setStatus(book.getStatus());
-        dto.setSellerId(book.getSeller() != null ? book.getSeller().getId() : null);
-        return dto;
+   
     }
-}
+
