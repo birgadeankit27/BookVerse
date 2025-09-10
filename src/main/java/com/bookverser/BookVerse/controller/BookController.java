@@ -56,7 +56,49 @@ public class BookController {
         List<BookDto> books = bookServiceImpl.getBooksByCategory(categoryName);
         return ResponseEntity.ok(books);
     }
+	
+	@GetMapping("/search")
+    public ResponseEntity<List<BookDto>> searchBooks(
+            @RequestParam String keyword,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice) {
 
+        List<BookDto> books = bookServiceImpl.searchBooks(keyword, minPrice, maxPrice);
+
+        if (books.isEmpty()) {
+            return ResponseEntity.noContent().build(); 
+        }
+        return ResponseEntity.ok(books); 
+    }
+	
+	@GetMapping("/search/details")
+	public ResponseEntity<List<BookDto>> searchBooksByDetails(
+	        @RequestParam(required = false) String title,
+	        @RequestParam(required = false) String author,
+	        @RequestParam(required = false) String isbn) {
+
+	    List<BookDto> books = bookServiceImpl.searchBooks(title, author, isbn);
+
+	    if (books.isEmpty()) {
+	        return ResponseEntity.noContent().build();
+	    }
+	    return ResponseEntity.ok(books);
+	}
+	
+	@GetMapping("/filter")
+	public ResponseEntity<List<BookDto>> filterBooks(
+	        @RequestParam(required = false) String category,
+	        @RequestParam(required = false) Double minPrice,
+	        @RequestParam(required = false) Double maxPrice,
+	        @RequestParam(required = false) String location) {
+
+	    List<BookDto> books = bookServiceImpl.filterBooks(category, minPrice, maxPrice, location);
+
+	    if (books.isEmpty()) {
+	        return ResponseEntity.noContent().build();
+	    }
+	    return ResponseEntity.ok(books);
+	}
 
 
 }

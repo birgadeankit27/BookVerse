@@ -196,14 +196,42 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public List<BookDto> searchBooks(String title, String author, String isbn) {
-		// TODO Auto-generated method stub
-		return null;
+	    List<Book> books = bookRepository.searchByTitleAuthorIsbn(title, author, isbn);
+
+	    return books.stream()
+	            .map(book -> modelMapper.map(book, BookDto.class))
+	            .toList();
 	}
 
 	@Override
+    public List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice) {
+        List<Book> books = bookRepository.searchByKeyword(keyword);
+
+        // Apply price filters if provided
+        if (minPrice != null) {
+            books = books.stream()
+                    .filter(book -> book.getPrice() >= minPrice)
+                    .collect(Collectors.toList());
+        }
+        if (maxPrice != null) {
+            books = books.stream()
+                    .filter(book -> book.getPrice() <= maxPrice)
+                    .collect(Collectors.toList());
+        }
+
+        return books.stream()
+                .map(book -> modelMapper.map(book, BookDto.class))
+                .collect(Collectors.toList());
+    }
+
+
+	@Override
 	public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
-		// TODO Auto-generated method stub
-		return null;
+	    List<Book> books = bookRepository.filterBooks(category, minPrice, maxPrice, location);
+
+	    return books.stream()
+	            .map(book -> modelMapper.map(book, BookDto.class))
+	            .toList();
 	}
 
 	@Override

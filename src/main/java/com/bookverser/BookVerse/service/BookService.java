@@ -1,7 +1,3 @@
-
-
-
-
 package com.bookverser.BookVerse.service;
 
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
@@ -151,7 +147,8 @@ public interface BookService {
     
     
     List<BookDto> searchBooks(String title, String author, String isbn);
-
+    
+    List<BookDto> searchBooks(String keyword, Double minPrice, Double maxPrice);
     /**
      * Filter books by category, price range, and location
      */
