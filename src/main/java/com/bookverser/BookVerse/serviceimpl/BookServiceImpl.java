@@ -140,15 +140,20 @@ public class BookServiceImpl implements BookService {
 	public void deleteBook(Long bookId) {
 		// TODO
 	}
-
 	
+	 @Override
+	    public List<BookDto> getBooksByCategory(String categoryName) {
+	        List<Book> books = bookRepository.findByCategory_Name(categoryName);
 
-	@Override
-	public List<BookDto> getBooksByCategory(Long categoryId) {
-		// TODO
-		return null;
-	}
+	        if (books.isEmpty()) {
+	            throw new ResourceNotFoundException(
+	                    "No books found for category: " + categoryName);
+	        }
 
+	        return books.stream()
+	                .map(book -> modelMapper.map(book, BookDto.class))
+	                .toList();
+	    }
 
 @Override
 	public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
