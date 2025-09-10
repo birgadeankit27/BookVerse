@@ -32,4 +32,23 @@ public class GlobalException {
 	    public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
 	        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
 	    }
+	  
+	  
+	  @ExceptionHandler(ResourceNotFoundException.class)
+	    public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+	    }
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+
 }

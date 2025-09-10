@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
 import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
+import com.bookverser.BookVerse.dto.UpdateBookRequestDTO;
 import com.bookverser.BookVerse.repository.UserRepository;
 
 import com.bookverser.BookVerse.serviceimpl.*;
@@ -47,4 +48,25 @@ public class BookController {
         }
         return ResponseEntity.ok(books);
     }
+    
+    
+    
+    @PutMapping("/{bookId}")
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
+    public ResponseEntity<BookDto> updateBook(
+            @PathVariable Long bookId,
+            @Valid @RequestBody UpdateBookRequestDTO request) {
+
+        BookDto updatedBook = bookServiceImpl.updateBook(bookId, request);
+        return ResponseEntity.ok(updatedBook); 
+    }
+    
+    
+    @DeleteMapping("/{bookId}")
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
+    public ResponseEntity<Void> deleteBook(@PathVariable Long bookId) {
+        bookServiceImpl.deleteBook(bookId);
+        return ResponseEntity.noContent().build(); 
+    }
+
 }

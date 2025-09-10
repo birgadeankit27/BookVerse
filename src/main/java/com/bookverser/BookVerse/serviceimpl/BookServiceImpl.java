@@ -28,9 +28,9 @@ import com.bookverser.BookVerse.repository.CategoryRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.security.CustomUserDetails;
 import com.bookverser.BookVerse.service.BookService;
-
+import com.bookverser.BookVerse.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
-
+import com.bookverser.BookVerse.exception.UnauthorizedException;
 @Service
 public class BookServiceImpl implements BookService {
 
@@ -121,21 +121,86 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    
     public BookDto getBookById(Long bookId) {
         // TODO
         return null;
     }
 
     @Override
+    @Transactional
     public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
-        // TODO
-        return null;
+       
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        User authUser = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
+
+        boolean isOwner = book.getSeller() != null && book.getSeller().getId().equals(authUser.getId());
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
+
+        if (!isOwner && !isAdmin) {
+            throw new UnauthorizedException("Only book owner or admin can update this book");
+        }
+
+        if (request.getStock() != null && request.getStock() < 0) {
+            throw new IllegalArgumentException("Stock cannot be negative.");
+        }
+
+        if (request.getPrice() != null && request.getPrice() <= 0) {
+            throw new IllegalArgumentException("Price must be positive.");
+        }
+
+        if (request.getTitle() != null) book.setTitle(request.getTitle().trim());
+        if (request.getAuthor() != null) book.setAuthor(request.getAuthor().trim());
+        if (request.getDescription() != null) book.setDescription(request.getDescription());
+        if (request.getPrice() != null) book.setPrice(request.getPrice());
+        if (request.getStock() != null) book.setStock(request.getStock());
+        if (request.getCondition() != null) book.setCondition(request.getCondition());
+        if (request.getImageUrl() != null) book.setImageUrl(request.getImageUrl());
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
+        book.setCategory(category);
+        Book updated = bookRepository.save(book);
+        BookDto dto = modelMapper.map(updated, BookDto.class);
+        dto.setCategoryId(updated.getCategory().getId());
+        dto.setSellerId(updated.getSeller().getId());
+        return dto;
     }
 
     @Override
+    @Transactional
     public void deleteBook(Long bookId) {
-        // TODO
+        
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        User authUser = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
+
+        boolean isOwner = book.getSeller() != null && book.getSeller().getId().equals(authUser.getId());
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
+
+        if (!isOwner && !isAdmin) {
+            throw new UnauthorizedException("Only book owner or admin can delete this book");
+        }
+        
+        book.setActive(false);
+        bookRepository.save(book);
     }
+
 
   
     @Override
