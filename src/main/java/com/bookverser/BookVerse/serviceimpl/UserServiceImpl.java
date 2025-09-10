@@ -3,6 +3,7 @@ package com.bookverser.BookVerse.serviceimpl;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
+import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
@@ -150,6 +151,32 @@ public class UserServiceImpl implements UserService {
 	                user.getName(),
 	                roles
 	        );
+	}
+
+	@Override
+	public UserDto updateUserProfile(String email, UpdateProfileRequest request) {
+		 User user = userRepository.findByEmail(email)
+	                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+	        // ✅ Update allowed fields
+	        user.setName(request.getName());
+	        user.setPhone(request.getPhone());
+	        user.setAddress(request.getAddress());
+//	        user.setCity(request.getCity());
+//	        user.setState(request.getState());
+//	        user.setCountry(request.getCountry());
+	        User updatedUser = userRepository.save(user);
+
+	        // ✅ Use ModelMapper to map User → UserDto
+	        UserDto dto = modelMapper.map(updatedUser, UserDto.class);
+
+	        // ✅ Manually handle roles because ModelMapper may not handle Set<Role> → String directly
+	        dto.setRole(updatedUser.getRoles().stream()
+	                .findFirst()
+	                .map(role -> role.getName())
+	                .orElse("CUSTOMER"));
+
+	        return dto;
 	}
 
 

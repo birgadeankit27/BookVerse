@@ -3,6 +3,7 @@ package com.bookverser.BookVerse.controller;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
+import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
@@ -114,6 +115,7 @@ public class UserController {
     }     
 
         // ==================== ✅ GET CURRENT LOGGED-IN USER ====================
+    
         @GetMapping("/get-current-user")
         public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
             if (userDetails == null) {
@@ -121,6 +123,22 @@ public class UserController {
             }
             UserDto userDto = userService.getUserByEmail(userDetails.getUsername()); // username = email
             return ResponseEntity.ok(userDto);
+        }
+        
+        
+        // ==================== ✅ UPDATE PROFILE ====================
+        
+        @PutMapping("/update-profile")
+        public ResponseEntity<UserDto> updateProfile(
+                @AuthenticationPrincipal UserDetails userDetails,
+                @Valid @RequestBody UpdateProfileRequest request) {
+
+            if (userDetails == null) {
+                return ResponseEntity.status(401).build(); // Unauthorized if no JWT token
+            }
+
+            UserDto updatedUser = userService.updateUserProfile(userDetails.getUsername(), request);
+            return ResponseEntity.ok(updatedUser);
         }
 
 }

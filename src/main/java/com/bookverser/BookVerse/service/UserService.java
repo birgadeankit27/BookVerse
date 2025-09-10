@@ -1,6 +1,7 @@
 package com.bookverser.BookVerse.service;
 
 import com.bookverser.BookVerse.dto.SignupDto;
+import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.dto.LoginRequest;
@@ -13,4 +14,5 @@ public interface UserService {
 //    LoginResponse processLogin(LoginRequest loginRequest, String token);
     LoginResponse processLogin(LoginRequest loginRequest, String accessToken, String refreshToken);
     UserDto getUserByEmail(String email);
+    UserDto updateUserProfile(String email, UpdateProfileRequest request);
 }
