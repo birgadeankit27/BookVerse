@@ -56,17 +56,7 @@ public class DataSeeder {
                         .address("Admin Address")
                         .phone("+911234567890")
                         .build();
-            User admin = User.builder()
-                    .name("admin")
-                    .email("admin@bookverse.com")
-                    .password(passwordEncoder.encode("admin123"))
-                    .roles(adminRoles)
-                    .address("Admin HQ, Tech Park")
-                    .city("Mumbai")
-                    .state("Maharashtra")
-                    .country("India")
-                    .phone("9999999999")
-                    .build();
+           
 
 
                 userRepository.save(admin);
@@ -96,18 +86,7 @@ public class DataSeeder {
                         .address("User Address")
                         .phone("+919876543210")
                         .build();
-            User user = User.builder()
-                    .name("ankit")
-                    .email("ankit@bookverse.com")
-                    .password(passwordEncoder.encode("securePassword"))
-                    .roles(userRoles)
-                    .address("User Colony, Main Street")
-                    .city("Delhi")
-                    .state("Delhi")
-                    .country("India")
-                    .phone("8888888888")
-                    .build();
-
+          
 
                 userRepository.save(user);
                 System.out.println("✅ Created default user: email='ankit@bookverse.com', password='securePassword'");

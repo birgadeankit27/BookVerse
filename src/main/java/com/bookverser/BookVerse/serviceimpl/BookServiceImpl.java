@@ -1,12 +1,17 @@
 package com.bookverser.BookVerse.serviceimpl;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -36,179 +41,206 @@ import jakarta.transaction.Transactional;
 @Service
 public class BookServiceImpl implements BookService {
 
-	@Autowired
-	private BookRepository bookRepository;
+    @Autowired
+    private BookRepository bookRepository;
 
-	@Autowired
-	private CategoryRepository categoryRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Autowired
-	private ModelMapper modelMapper;
+    @Autowired
+    private ModelMapper modelMapper;
 
-	@Override
-	@Transactional
-	public BookDto addBook(CreateBookRequestDTO request) {
-		if (bookRepository.existsByIsbn(request.getIsbn())) {
-			throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
-		}
+    // Inject upload directory from application.properties
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
-		// Get authenticated seller
-		User seller = getAuthenticatedSeller();
+    @Override
+    @Transactional
+    public BookDto addBook(CreateBookRequestDTO request) {
+        if (bookRepository.existsByIsbn(request.getIsbn())) {
+            throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
+        }
 
-		// Fetch category
-		Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
-				() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
+        // Get authenticated seller
+        User seller = getAuthenticatedSeller();
 
-		// Map DTO -> Entity
-		Book book = new Book();
-		book.setTitle(request.getTitle());
-		book.setAuthor(request.getAuthor());
-		book.setDescription(request.getDescription());
-		book.setPrice(request.getPrice());
-		book.setIsbn(request.getIsbn());
-		book.setStock(request.getStock());
-		book.setCondition(request.getCondition());
-		book.setImageUrl(request.getImageUrl());
-		book.setCategory(category);
-		book.setSeller(seller);
-		book.setStatus("AVAILABLE");
-		book.setFeatured(false);
-		book.setActive(true);
+        // Fetch category
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
 
-		// Save book
-		Book savedBook = bookRepository.save(book);
+        // Map DTO -> Entity
+        Book book = new Book();
+        book.setTitle(request.getTitle());
+        book.setAuthor(request.getAuthor());
+        book.setDescription(request.getDescription());
+        book.setPrice(request.getPrice());
+        book.setIsbn(request.getIsbn());
+        book.setStock(request.getStock());
+        book.setCondition(request.getCondition());
+        book.setImageUrl(request.getImageUrl());
+        book.setCategory(category);
+        book.setSeller(seller);
+        book.setStatus("AVAILABLE");
+        book.setFeatured(false);
+        book.setActive(true);
 
-		// Map Entity -> DTO
-		BookDto bookDto = new BookDto();
-		bookDto.setId(savedBook.getId());
-		bookDto.setTitle(savedBook.getTitle());
-		bookDto.setAuthor(savedBook.getAuthor());
-		bookDto.setDescription(savedBook.getDescription());
-		bookDto.setPrice(savedBook.getPrice());
-		bookDto.setIsbn(savedBook.getIsbn());
-		bookDto.setStock(savedBook.getStock());
-		bookDto.setCondition(savedBook.getCondition());
-		bookDto.setImageUrl(savedBook.getImageUrl());
-		bookDto.setCategoryId(savedBook.getCategory().getId());
-		bookDto.setSellerId(savedBook.getSeller().getId());
-		bookDto.setStatus(savedBook.getStatus());
-		bookDto.setFeatured(savedBook.isFeatured());
+        // Save book
+        Book savedBook = bookRepository.save(book);
 
-		return bookDto;
-	}
+        // Map Entity -> DTO
+        BookDto bookDto = new BookDto();
+        bookDto.setId(savedBook.getId());
+        bookDto.setTitle(savedBook.getTitle());
+        bookDto.setAuthor(savedBook.getAuthor());
+        bookDto.setDescription(savedBook.getDescription());
+        bookDto.setPrice(savedBook.getPrice());
+        bookDto.setIsbn(savedBook.getIsbn());
+        bookDto.setStock(savedBook.getStock());
+        bookDto.setCondition(savedBook.getCondition());
+        bookDto.setImageUrl(savedBook.getImageUrl());
+        bookDto.setCategoryId(savedBook.getCategory().getId());
+        bookDto.setSellerId(savedBook.getSeller().getId());
+        bookDto.setStatus(savedBook.getStatus());
+        bookDto.setFeatured(savedBook.isFeatured());
 
-	// Helper method to get authenticated seller
-	private User getAuthenticatedSeller() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated()) {
-			throw new RuntimeException("User not authenticated");
-		}
-		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        return bookDto;
+    }
 
-		return userRepository.findById(userDetails.getId())
-				.orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-	}
+    // Helper method to get authenticated seller
+    private User getAuthenticatedSeller() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
 
-	// ------------------- Other methods (stubs) -------------------
+        return userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+    }
 
-	@Override
-	public Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice,
-			Double maxPrice) {
-		// TODO: implement filtering and pagination
-		return null;
-	}
+    @Override
+    public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
+        Page<Book> books = bookRepository.findAll(pageable); // You can later add filters
 
-	@Override
-	public BookDto getBookById(Long bookId) {
-		Book book = bookRepository.findById(bookId)
-				.orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
+        // Convert Page<Book> → Page<BookDto>
+        return books.map(book -> modelMapper.map(book, BookDto.class));
+    }
 
-		return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
-				book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
-	}
+    @Override
+    public BookDto getBookById(Long bookId) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
 
-	@Override
-	public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
-		// TODO
-		return null;
-	}
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+                book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
+    }
 
-	@Override
-	public void deleteBook(Long bookId) {
-		// TODO
-	}
-	
-	 @Override
-	    public List<BookDto> getBooksByCategory(String categoryName) {
-	        List<Book> books = bookRepository.findByCategory_Name(categoryName);
+    @Override
+    public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
+        // TODO implement update logic
+        return null;
+    }
 
-	        if (books.isEmpty()) {
-	            throw new ResourceNotFoundException(
-	                    "No books found for category: " + categoryName);
-	        }
+    @Override
+    public void deleteBook(Long bookId) {
+        // TODO implement delete logic
+    }
 
-	        return books.stream()
-	                .map(book -> modelMapper.map(book, BookDto.class))
-	                .toList();
-	    }
+    @Override
+    public List<BookDto> getBooksByCategory(String categoryName) {
+        List<Book> books = bookRepository.findByCategory_Name(categoryName);
 
-@Override
-	public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-		Book book = bookRepository.findById(bookId)
-				.orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
-		book.setStock(request.getStock());
-		bookRepository.save(book);
-		return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
-				book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
-	}
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException("No books found for category: " + categoryName);
+        }
 
-	@Override
-	public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
-		// TODO
-		return null;
-	}
+        return books.stream()
+                .map(book -> modelMapper.map(book, BookDto.class))
+                .toList();
+    }
 
-	@Override
-	public void bulkImportBooks(MultipartFile file) throws IOException {
-		// TODO
-	}
+    @Override
+    public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        book.setStock(request.getStock());
+        bookRepository.save(book);
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+                book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
+    }
+    @Override
+    public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
 
-	@Override
-	public List<BookDto> getBooksBySeller(Long sellerId) {
-		// TODO
-		return null;
-	}
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
 
-	@Override
-	public BookDto featureBook(Long bookId) {
-		// TODO
-		return null;
-	}
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (!created) {
+                throw new IOException("Failed to create upload directory: " + uploadDir);
+            }
+        }
 
-	@Override
-	public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
 
-	@Override
-	public List<BookDto> searchBooks(String title, String author, String isbn) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new IOException("Failed to save file: " + fileName, e);
+        }
 
-	@Override
-	public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        String imageUrl = "/uploads/" + fileName;
+        book.setImageUrl(imageUrl);
+        bookRepository.save(book);
 
-	@Override
-	public List<BookDto> sortBooks(String sortBy) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+        return modelMapper.map(book, BookDto.class);
+    }
+    @Override
+    public void bulkImportBooks(MultipartFile file) throws IOException {
+        // TODO implement CSV/Excel import
+    }
+
+    @Override
+    public List<BookDto> getBooksBySeller(Long sellerId) {
+        // TODO implement get by seller
+        return null;
+    }
+
+    @Override
+    public BookDto featureBook(Long bookId) {
+        // TODO implement feature logic
+        return null;
+    }
+
+    @Override
+    public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
+        // TODO implement advanced search
+        return null;
+    }
+
+    @Override
+    public List<BookDto> searchBooks(String title, String author, String isbn) {
+        // TODO implement search
+        return null;
+    }
+
+    @Override
+    public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
+        // TODO implement filter
+        return null;
+    }
+
+    @Override
+    public List<BookDto> sortBooks(String sortBy) {
+        // TODO implement sorting
+        return null;
+    }
 }
