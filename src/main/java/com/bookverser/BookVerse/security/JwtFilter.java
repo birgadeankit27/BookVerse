@@ -1,3 +1,4 @@
+
 package com.bookverser.BookVerse.security;
 
 import java.io.IOException;
@@ -11,8 +12,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -36,9 +35,10 @@ public class JwtFilter extends OncePerRequestFilter {
         
         String requestURI = request.getRequestURI();
         
-        // Skip filter ONLY for public /auth endpoints (login and register)
-        // Allow JWT processing for /register-admin and other secured /auth endpoints
-        if (requestURI.equals("/auth/login") || requestURI.equals("/auth/register")) {
+        // Skip filter for public /auth endpoints (login, register, and refresh-token)
+        if (requestURI.equals("/auth/login") || 
+            requestURI.equals("/auth/register") || 
+            requestURI.equals("/auth/refresh-token")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
             token = authHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(token);
-                logger.info("Extracted username from token: {}", username); // Add logging for debugging
+                logger.info("Extracted username from token: {}", username);
             } catch (Exception e) {
                 logger.warn("JWT extraction failed: {}", e.getMessage());
             }
@@ -60,14 +60,14 @@ public class JwtFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtil.validateToken(token, userDetails)) {
+            if (jwtUtil.validateAccessToken(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                logger.info("Set authentication for user: {} with roles: {}", username, userDetails.getAuthorities()); // Add logging
+                logger.info("Set authentication for user: {} with roles: {}", username, userDetails.getAuthorities());
             } else {
-                logger.warn("Token validation failed for username: {}", username);
+                logger.warn("Access token validation failed for username: {}", username);
             }
         }
 

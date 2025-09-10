@@ -46,7 +46,7 @@ public interface BookService {
      * @param maxPrice Maximum price filter (optional).
      * @return Page<BookDTO> of in-stock books.
      */
-    Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice, Double maxPrice);
+    Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice);
 
     /**
      * Get a book by its ID (BOOK:PUBLIC:GET-BY-ID).
@@ -92,7 +92,7 @@ public interface BookService {
      * @return List<BookDTO> of books in the category.
      * @throws ResourceNotFoundException if category not found (404).
      */
-    List<BookDto> getBooksByCategory(Long categoryId);
+    List<BookDto> getBooksByCategory(String categoryName);
 
     /**
      * Update book stock with optimistic locking (BOOK:SELLER:UPDATE-STOCK).
@@ -147,4 +147,21 @@ public interface BookService {
      * @throws ResourceNotFoundException if book not found (404).
      */
     BookDto featureBook(Long bookId);
+    
+    
+    
+    List<BookDto> searchBooks(String title, String author, String isbn);
+
+    /**
+     * Filter books by category, price range, and location
+     */
+    List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location);
+
+    /**
+     * Sort books by latest, price, or rating
+     */
+    List<BookDto> sortBooks(String sortBy);
+    
+    
+ 
 }

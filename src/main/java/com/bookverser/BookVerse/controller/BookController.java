@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable; 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -13,12 +16,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
+
 import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
-import com.bookverser.BookVerse.repository.UserRepository;
 
-import com.bookverser.BookVerse.serviceimpl.*;
+import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
+
+import com.bookverser.BookVerse.repository.UserRepository;
+import com.bookverser.BookVerse.serviceimpl.BookServiceImpl;
 
 
 import jakarta.validation.Valid;
@@ -37,21 +43,29 @@ public class BookController {
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
     public ResponseEntity<?> addBook(@Valid @RequestBody CreateBookRequestDTO request,
                                      Authentication authentication) {
+        BookDto createdBook = bookServiceImpl.addBook(request);
+        return ResponseEntity.ok(createdBook);
+    }
 
-    	   BookDto createdBook = bookServiceImpl.addBook(request);
-           return ResponseEntity.ok(createdBook);
-}
-    
-    
-    @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('CUSTOMER','SELLER','ADMIN')")
-    public ResponseEntity<List<BookDto>> searchBooks(@Valid SearchBooksRequestDTO request) {
-        List<BookDto> books = bookServiceImpl.searchBooks(request);
-        if (books.isEmpty()) {
-            return ResponseEntity.noContent().build(); 
-        }
+    @GetMapping("/{bookId}")
+    public ResponseEntity<BookDto> getBookById(@PathVariable Long bookId) {
+        BookDto bookdto = bookServiceImpl.getBookById(bookId);
+        return ResponseEntity.ok(bookdto);
+    }
+
+    @PatchMapping("/{bookId}/stock")
+    public ResponseEntity<BookDto> updateStock(@PathVariable Long bookId,
+                                               @RequestBody @Valid UpdateStockRequestDTO request) {
+        BookDto bookdto = bookServiceImpl.updateStock(bookId, request);
+        return ResponseEntity.ok(bookdto);
+    }
+
+    @GetMapping("/category/{categoryName}")
+    public ResponseEntity<List<BookDto>> getBooksByCategory(@PathVariable String categoryName) {
+        List<BookDto> books = bookServiceImpl.getBooksByCategory(categoryName);
         return ResponseEntity.ok(books);
     }
+
     
  // ------------------- Get Books by Seller -------------------
     @GetMapping("/seller/{sellerId}")
@@ -79,3 +93,21 @@ public class BookController {
     }
 
 }
+
+
+    @GetMapping("/getAll")
+    public Page<BookDto> getAllBooks(@RequestParam(required = false) String category,
+                                    @RequestParam(required = false) String author,
+                                    @RequestParam(required = false) Double minPrice,
+                                    @RequestParam(required = false) Double maxPrice,
+                                    Pageable pageable) {
+        return bookServiceImpl.getAllBooks(pageable, category, author, minPrice, maxPrice);
+    }
+
+    @PostMapping("/{bookId}/uploadImage")
+    public BookDto uploadBookImage(@PathVariable Long bookId,
+                                  @RequestParam("file") MultipartFile file) throws IOException {
+        return bookServiceImpl.uploadImage(bookId, file);
+    }
+}
+

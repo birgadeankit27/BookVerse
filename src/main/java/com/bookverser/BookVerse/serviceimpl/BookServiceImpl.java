@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.serviceimpl;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,8 +9,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
+
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -29,7 +41,10 @@ import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.CategoryNotFoundException;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
 import com.bookverser.BookVerse.exception.ResourceNotFoundException;
+
 import com.bookverser.BookVerse.exception.UnauthorizedException;
+
+
 import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.repository.CategoryRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
@@ -57,6 +72,11 @@ public class BookServiceImpl implements BookService {
     private ModelMapper modelMapper;
 
     // ------------------- Add Book -------------------
+
+    // Inject upload directory from application.properties
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
     @Override
     @Transactional
     public BookDto addBook(CreateBookRequestDTO request) {
@@ -69,8 +89,7 @@ public class BookServiceImpl implements BookService {
 
         // Fetch category
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new CategoryNotFoundException(
-                        "Category not found with id: " + request.getCategoryId()));
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
 
         // Map DTO -> Entity
         Book book = new Book();
@@ -122,6 +141,7 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
     }
 
+
     // ------------------- Get Books By Seller -------------------
     
 
@@ -159,61 +179,141 @@ public class BookServiceImpl implements BookService {
     @Override
     public Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice, Double maxPrice) {
         return null;
+
+    @Override
+    public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
+        Page<Book> books = bookRepository.findAll(pageable); // You can later add filters
+
+        // Convert Page<Book> → Page<BookDto>
+        return books.map(book -> modelMapper.map(book, BookDto.class));
+
     }
 
     @Override
     public BookDto getBookById(Long bookId) {
+
         return null;
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
+
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+                book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
+
     }
 
     @Override
     public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
+
+
+        // TODO implement update logic
+
         return null;
     }
 
     @Override
     public void deleteBook(Long bookId) {
+
+
     }
 
     @Override
-    public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
-        List<Book> books = bookRepository.searchBooks(
-                request.getKeyword(),
-                request.getMinPrice(),
-                request.getMaxPrice()
-        );
+    public List<BookDto> getBooksByCategory(String categoryName) {
+        List<Book> books = bookRepository.findByCategory_Name(categoryName);
 
         if (books.isEmpty()) {
+
             return List.of();
+
+            throw new ResourceNotFoundException("No books found for category: " + categoryName);
+
         }
 
         return books.stream()
-                .map(book -> {
-                    BookDto dto = modelMapper.map(book, BookDto.class);
-                    dto.setCategoryId(book.getCategory().getId());
-                    dto.setSellerId(book.getSeller().getId());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+                .map(book -> modelMapper.map(book, BookDto.class))
+                .toList();
     }
+
 
     
     @Override
     public List<BookDto> getBooksByCategory(Long categoryId) {
-        return null;
-    }
 
     @Override
     public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-        return null;
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        book.setStock(request.getStock());
+        bookRepository.save(book);
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+                book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
     }
-
     @Override
     public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
+
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (!created) {
+                throw new IOException("Failed to create upload directory: " + uploadDir);
+            }
+        }
+
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
+
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new IOException("Failed to save file: " + fileName, e);
+        }
+
+        String imageUrl = "/uploads/" + fileName;
+        book.setImageUrl(imageUrl);
+        bookRepository.save(book);
+
+        return modelMapper.map(book, BookDto.class);
+    }
+    @Override
+    public void bulkImportBooks(MultipartFile file) throws IOException {
+        // TODO implement CSV/Excel import
+    }
+
+    @Override
+    public List<BookDto> getBooksBySeller(Long sellerId) {
+        // TODO implement get by seller
+
         return null;
     }
 
     @Override
+
+    public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
+
+    public BookDto featureBook(Long bookId) {
+        // TODO implement feature logic
+
+        return null;
+    }
+
+    @Override
+
+    public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+
+    public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
+        // TODO implement advanced search
+
+        return null;
+    }
+
+    @Override
+
     @Transactional
     public void bulkImportBooks(MultipartFile file) throws IOException {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -370,6 +470,23 @@ public class BookServiceImpl implements BookService {
         }
 
         return books;
+
+    public List<BookDto> searchBooks(String title, String author, String isbn) {
+        // TODO implement search
+        return null;
+    }
+
+    @Override
+    public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
+        // TODO implement filter
+        return null;
+    }
+
+    @Override
+    public List<BookDto> sortBooks(String sortBy) {
+        // TODO implement sorting
+        return null;
+
     }
 
 	@Override
