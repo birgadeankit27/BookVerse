@@ -46,7 +46,7 @@ public interface BookService {
      * @param maxPrice Maximum price filter (optional).
      * @return Page<BookDTO> of in-stock books.
      */
-    Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice, Double maxPrice);
+    Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice);
 
     /**
      * Get a book by its ID (BOOK:PUBLIC:GET-BY-ID).
