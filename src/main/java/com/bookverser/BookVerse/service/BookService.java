@@ -161,6 +161,8 @@ public interface BookService {
      * Sort books by latest, price, or rating
      */
     List<BookDto> sortBooks(String sortBy);
+
+	List<BookDto> getBooksByCategory(Long categoryId);
     
     
  

@@ -59,6 +59,19 @@ public class BookController {
         BookDto bookdto = bookServiceImpl.updateStock(bookId, request);
         return ResponseEntity.ok(bookdto);
     }
+    
+    @GetMapping("/filter")
+	public ResponseEntity<List<BookDto>> filterBooks(@RequestParam(required = false) String category,
+			@RequestParam(required = false) Double minPrice, @RequestParam(required = false) Double maxPrice,
+			@RequestParam(required = false) String location) {
+		List<BookDto> bookDtos = bookServiceImpl.filterBooks(category, minPrice, maxPrice, location);
+
+		if (bookDtos.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+		}
+
+		return ResponseEntity.ok(bookDtos);
+	}
 
     @GetMapping("/category/{categoryName}")
     public ResponseEntity<List<BookDto>> getBooksByCategory(@PathVariable String categoryName) {
@@ -92,7 +105,7 @@ public class BookController {
         }
     }
 
-}
+
 
 
     @GetMapping("/getAll")
