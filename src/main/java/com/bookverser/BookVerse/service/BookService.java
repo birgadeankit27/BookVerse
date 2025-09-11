@@ -80,14 +80,7 @@ public interface BookService {
      * @param request DTO with search parameters (keyword, minPrice, maxPrice).
      * @return List<BookDTO> of matching books.
      */
-    List<BookDto> searchBooks(SearchBooksRequestDTO request);
-
-    /**
-     * Get books by category (BOOK:PUBLIC:GET-BY-CATEGORY).
-     * @param categoryId ID of the category.
-     * @return List<BookDTO> of books in the category.
-     * @throws ResourceNotFoundException if category not found (404).
-     */
+   
     List<BookDto> getBooksByCategory(String categoryName);
 
     /**
@@ -144,7 +137,14 @@ public interface BookService {
      */
     BookDto featureBook(Long bookId);
     
+    List<BookDto> searchBooksByTitle(String title);
     
+    List<BookDto> searchBooksByAuthor(String author);
+    
+    List<BookDto> searchBooksByCategory(String categoryName);
+    
+    BookDto searchBookByIsbn(String isbn);
+
     
     List<BookDto> searchBooks(String title, String author, String isbn);
     

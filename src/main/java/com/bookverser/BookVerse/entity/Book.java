@@ -69,10 +69,10 @@ public class Book {
     private String condition;
 
     @Column(nullable = false)
-    private String status = "AVAILABLE"; // default
+    private String status = "AVAILABLE"; 
 
     @Column(nullable = false)
-    private boolean isFeatured = false; // default
+    private boolean isFeatured = false; 
 
     @Column(nullable = false)
     private boolean isActive = true;

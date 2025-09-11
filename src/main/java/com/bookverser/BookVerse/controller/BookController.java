@@ -85,6 +85,28 @@ public class BookController {
 	    return ResponseEntity.ok(books);
 	}
 	
+	 @GetMapping("/search/title")
+	    public ResponseEntity<List<BookDto>> searchByTitle(@RequestParam String title) {
+	        return ResponseEntity.ok(bookServiceImpl.searchBooksByTitle(title));
+	    }
+	 
+	 @GetMapping("/search/author")
+	    public ResponseEntity<List<BookDto>> searchByAuthor(@RequestParam String author) {
+	        return ResponseEntity.ok(bookServiceImpl.searchBooksByAuthor(author));
+	    }
+
+	 @GetMapping("/search/category")
+	    public ResponseEntity<List<BookDto>> searchByCategory(@RequestParam String category) {
+	        return ResponseEntity.ok(bookServiceImpl.searchBooksByCategory(category));
+	    }
+
+	    @GetMapping("/search/isbn")
+	    public ResponseEntity<BookDto> getBookByIsbn(@RequestParam String isbn) {
+	        BookDto book = bookServiceImpl.searchBookByIsbn(isbn);
+	        return ResponseEntity.ok(book);  
+	    }
+
+	
 	@GetMapping("/filter")
 	public ResponseEntity<List<BookDto>> filterBooks(
 	        @RequestParam(required = false) String category,

@@ -38,7 +38,25 @@ public interface BookRepository extends JpaRepository<Book, Long>{
 		                       @Param("minPrice") Double minPrice,
 		                       @Param("maxPrice") Double maxPrice,
 		                       @Param("location") String location);
-
+	 
+	 @Query("SELECT b FROM Book b " +
+		       "WHERE (:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+		       "   OR LOWER(b.author) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+		       "   OR LOWER(b.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+		       "AND (:minPrice IS NULL OR b.price >= :minPrice) " +
+		       "AND (:maxPrice IS NULL OR b.price <= :maxPrice)")
+		List<Book> searchBooksWithFilters(@Param("keyword") String keyword,
+		                                  @Param("minPrice") Double minPrice,
+		                                  @Param("maxPrice") Double maxPrice);
+	 
+	    
+	    List<Book> findByTitleContainingIgnoreCase(String title);
+	    
+	    List<Book> findByAuthorContainingIgnoreCase(String author);
+	    
+	    List<Book> findByCategoryNameIgnoreCase(String categoryName);
+	    
+	    Optional<Book> findByIsbn(String isbn); 
 	 
 	
 	 

@@ -47,6 +47,10 @@ public class BookServiceImpl implements BookService {
 
 	@Autowired
 	private ModelMapper modelMapper;
+	
+	private BookDto mapToDto(Book book) {
+	    return modelMapper.map(book, BookDto.class);
+	}
 
 	@Override
 	@Transactional
@@ -187,12 +191,35 @@ public class BookServiceImpl implements BookService {
 		// TODO
 		return null;
 	}
+	
+    @Override
+    public List<BookDto> searchBooksByTitle(String title) {
+        List<Book> books = bookRepository.findByTitleContainingIgnoreCase(title);
+        return books.stream().map(this::mapToDto).toList();
+    }
+    
+    @Override
+    public List<BookDto> searchBooksByAuthor(String author) {
+        List<Book> books = bookRepository.findByAuthorContainingIgnoreCase(author);
+        return books.stream().map(this::mapToDto).toList();
+    }
 
-	@Override
-	public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    
+    @Override
+    public List<BookDto> searchBooksByCategory(String categoryName) {
+        List<Book> books = bookRepository.findByCategoryNameIgnoreCase(categoryName);
+        return books.stream().map(this::mapToDto).toList();
+    }
+
+    @Override
+    public BookDto searchBookByIsbn(String isbn) {
+        Book book = bookRepository.findByIsbn(isbn)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ISBN: " + isbn));
+        return mapToDto(book);  // ✅ return full BookDto, not just "1"
+    }
+
+   
+	
 
 	@Override
 	public List<BookDto> searchBooks(String title, String author, String isbn) {
@@ -239,4 +266,6 @@ public class BookServiceImpl implements BookService {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	
 }
