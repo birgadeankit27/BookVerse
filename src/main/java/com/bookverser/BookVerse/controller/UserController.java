@@ -1,6 +1,7 @@
 package com.bookverser.BookVerse.controller;
 
 import com.bookverser.BookVerse.dto.ChangePasswordRequest;
+import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
@@ -158,6 +159,18 @@ public class UserController {
                 return ResponseEntity.ok(message);
             } catch (RuntimeException e) {
                 return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
+        
+        // ==================== ✅ Forgot Password (Request OTP)  ====================
+        
+        @PostMapping("/forgot-password")
+        public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+            try {
+                String response = userService.forgotPassword(request);
+                return ResponseEntity.ok(response);
+            } catch (RuntimeException e) {
+                return ResponseEntity.status(404).body(e.getMessage());
             }
         }
 }

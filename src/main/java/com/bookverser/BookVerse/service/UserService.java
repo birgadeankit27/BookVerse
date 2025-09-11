@@ -5,6 +5,7 @@ import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.dto.ChangePasswordRequest;
+import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 
@@ -18,4 +19,6 @@ public interface UserService {
     UserDto updateUserProfile(String email, UpdateProfileRequest request);
  // Change password
     String changePassword(String email, ChangePasswordRequest request);
+    String forgotPassword(ForgotPasswordRequest request);
+
 }

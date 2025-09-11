@@ -1,13 +1,16 @@
 package com.bookverser.BookVerse.serviceimpl;
 
 import com.bookverser.BookVerse.dto.ChangePasswordRequest;
+import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
+import com.bookverser.BookVerse.entity.PasswordResetToken;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
+import com.bookverser.BookVerse.repository.PasswordResetTokenRepository;
 import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.UserService;
@@ -18,8 +21,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,16 +35,19 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
+    private final PasswordResetTokenRepository tokenRepository;
 
 
     public UserServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
-                           ModelMapper modelMapper) {
+                           ModelMapper modelMapper,
+                           PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
+        this.tokenRepository = tokenRepository;
     }
      
     @Transactional
@@ -100,6 +108,7 @@ public class UserServiceImpl implements UserService {
         return "Admin registered successfully";
     }
 
+    
     @Override
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -136,6 +145,8 @@ public class UserServiceImpl implements UserService {
 
 	    return dto;
     }
+	
+	
 
 	@Override
 	public LoginResponse processLogin(LoginRequest loginRequest, String accessToken, String refreshToken) {
@@ -157,6 +168,8 @@ public class UserServiceImpl implements UserService {
 	        );
 	}
 
+	
+	
 	@Override
 	public UserDto updateUserProfile(String email, UpdateProfileRequest request) {
 		 User user = userRepository.findByEmail(email)
@@ -182,6 +195,7 @@ public class UserServiceImpl implements UserService {
 
 	        return dto;
 	}
+	
 
 	@Override
 	public String changePassword(String email, ChangePasswordRequest request) {
@@ -196,6 +210,32 @@ public class UserServiceImpl implements UserService {
 	        userRepository.save(user);
 
 	        return "Password changed successfully";
+	}
+	
+
+	@Override
+	public String forgotPassword(ForgotPasswordRequest request) {
+		 User user = userRepository.findByEmail(request.getEmail())
+	                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+
+	        // ✅ Generate OTP
+	        String otp = String.format("%06d", new Random().nextInt(999999));
+
+	        // ✅ Expiry = 5 minutes
+	        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(5);
+
+	        // ✅ Save OTP
+	        PasswordResetToken token = tokenRepository.findByEmail(user.getEmail())
+	                .orElse(new PasswordResetToken());
+	        token.setEmail(user.getEmail());
+	        token.setOtp(otp);
+	        token.setExpiryTime(expiryTime);
+	        tokenRepository.save(token);
+
+	        // ✅ Send OTP (later you can integrate with Email/SMS service)
+	        System.out.println("OTP for " + user.getEmail() + " is: " + otp);
+
+	        return "OTP sent successfully to " + user.getEmail();
 	}
 
 
