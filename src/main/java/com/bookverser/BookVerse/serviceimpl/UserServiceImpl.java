@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.serviceimpl;
 
+import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
@@ -109,28 +110,31 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserDto getUserByEmail(String email) {
-		 User user = userRepository.findByEmail(email)
-	                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-	      return mapToDto(user);
-	      
-	        // ✅ Use ModelMapper instead of mapToDto
-	       // return modelMapper.map(user, UserDto.class);
-	    }
-//	  ✅ Helper method to map Entity → DTO
-	private UserDto mapToDto(User user) {
-        String roles = user.getRoles().stream()
-                .map(Role::getName)
-                .reduce((r1, r2) -> r1 + ", " + r2) // Join roles into single string
-                .orElse("USER");
+		User user = userRepository.findByEmail(email)
+	            .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+	    return mapToDto(user);
+	}
 
-        UserDto dto = new UserDto();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setRole(roles);
-        dto.setAddress(user.getAddress());
-        dto.setPhone(user.getPhone());
-        return dto;
+	// ✅ Helper method to map Entity → DTO
+	private UserDto mapToDto(User user) {
+	    // Convert role set → single role string
+	    String roles = user.getRoles().stream()
+	            .map(Role::getName)
+	            .reduce((r1, r2) -> r1 + ", " + r2)
+	            .orElse("CUSTOMER");
+
+	    UserDto dto = new UserDto();
+	    dto.setId(user.getId());
+	    dto.setName(user.getName());
+	    dto.setEmail(user.getEmail());
+	    dto.setRole(roles);
+	    dto.setAddress(user.getAddress());
+	    dto.setPhone(user.getPhone());
+	    dto.setCity(user.getCity());
+	    dto.setState(user.getState());
+	    dto.setCountry(user.getCountry());
+
+	    return dto;
     }
 
 	@Override
@@ -162,9 +166,9 @@ public class UserServiceImpl implements UserService {
 	        user.setName(request.getName());
 	        user.setPhone(request.getPhone());
 	        user.setAddress(request.getAddress());
-//	        user.setCity(request.getCity());
-//	        user.setState(request.getState());
-//	        user.setCountry(request.getCountry());
+	        user.setCity(request.getCity());
+	        user.setState(request.getState());
+	        user.setCountry(request.getCountry());
 	        User updatedUser = userRepository.save(user);
 
 	        // ✅ Use ModelMapper to map User → UserDto
@@ -177,6 +181,21 @@ public class UserServiceImpl implements UserService {
 	                .orElse("CUSTOMER"));
 
 	        return dto;
+	}
+
+	@Override
+	public String changePassword(String email, ChangePasswordRequest request) {
+		 User user = userRepository.findByEmail(email)
+	                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+	        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+	            throw new RuntimeException("Invalid old password");
+	        }
+
+	        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+	        userRepository.save(user);
+
+	        return "Password changed successfully";
 	}
 
 

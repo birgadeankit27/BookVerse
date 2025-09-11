@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.controller;
 
+import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
 import com.bookverser.BookVerse.dto.SignupDto;
@@ -140,5 +141,23 @@ public class UserController {
             UserDto updatedUser = userService.updateUserProfile(userDetails.getUsername(), request);
             return ResponseEntity.ok(updatedUser);
         }
+        
+        // ==================== ✅ Change Password ====================
+        
+        @PutMapping("/change-password")
+        public ResponseEntity<?> changePassword(
+                @AuthenticationPrincipal UserDetails userDetails,
+                @Valid @RequestBody ChangePasswordRequest request) {
 
+            if (userDetails == null) {
+                return ResponseEntity.status(401).body("Unauthorized: Please login first");
+            }
+
+            try {
+                String message = userService.changePassword(userDetails.getUsername(), request);
+                return ResponseEntity.ok(message);
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
 }

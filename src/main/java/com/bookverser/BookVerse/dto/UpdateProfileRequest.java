@@ -17,15 +17,15 @@ public class UpdateProfileRequest {
 	    @Size(max = 255, message = "Address must not exceed 255 characters")
 	    private String address;
 
-//	    @NotBlank(message = "City is required")
-//	    @Size(max = 50, message = "City must not exceed 50 characters")
-//	    private String city;
-//
-//	    @NotBlank(message = "State is required")
-//	    @Size(max = 50, message = "State must not exceed 50 characters")
-//	    private String state;
-//
-//	    @NotBlank(message = "Country is required")
-//	    @Size(max = 50, message = "Country must not exceed 50 characters")
-//	    private String country;
+	    @NotBlank(message = "City is required")
+	    @Size(max = 50, message = "City must not exceed 50 characters")
+	    private String city;
+
+	    @NotBlank(message = "State is required")
+	    @Size(max = 50, message = "State must not exceed 50 characters")
+	    private String state;
+
+	    @NotBlank(message = "Country is required")
+	    @Size(max = 50, message = "Country must not exceed 50 characters")
+	    private String country;
 }
