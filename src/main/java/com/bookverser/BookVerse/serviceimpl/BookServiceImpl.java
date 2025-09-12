@@ -37,6 +37,7 @@ import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.CategoryNotFoundException;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
 import com.bookverser.BookVerse.exception.InvalidPriceRangeException;
+import com.bookverser.BookVerse.exception.InvalidSortParameterException;
 import com.bookverser.BookVerse.exception.ResourceNotFoundException;
 
 import com.bookverser.BookVerse.exception.UnauthorizedException;
@@ -442,6 +443,26 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public List<BookDto> sortBooks(String sortBy) {
-		return null;
+		List<Book> books;
+
+		String sort = sortBy.toLowerCase();
+
+		if (!sort.equals("latest") && !sort.equals("priceasc") && !sort.equals("pricedesc") && !sort.equals("rating")
+				&& sort != null) {
+			throw new InvalidSortParameterException("Give the proper sorting string");
+		} else if (sortBy == null || sortBy.equalsIgnoreCase("latest")) {
+			books = bookRepository.findAllByLatest();
+		} else if (sortBy.equalsIgnoreCase("priceAsc")) {
+			books = bookRepository.findAllByPriceAsc();
+		} else if (sortBy.equalsIgnoreCase("priceDesc")) {
+			books = bookRepository.findAllByPriceDesc();
+		} else if (sortBy.equalsIgnoreCase("rating")) {
+			books = bookRepository.findAllByRating();
+		} else {
+			books = bookRepository.findAll();
+		}
+
+		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
 	}
+
 }
