@@ -4,6 +4,7 @@ import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
+import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
@@ -18,10 +19,16 @@ import com.bookverser.BookVerse.service.UserService;
 import jakarta.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -36,18 +43,21 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final ModelMapper modelMapper;
     private final PasswordResetTokenRepository tokenRepository;
+    private final JavaMailSender mailSender;
 
 
     public UserServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
                            ModelMapper modelMapper,
-                           PasswordResetTokenRepository tokenRepository) {
+                           PasswordResetTokenRepository tokenRepository,
+                           JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.tokenRepository = tokenRepository;
+        this.mailSender = mailSender;
     }
      
     @Transactional
@@ -215,27 +225,87 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public String forgotPassword(ForgotPasswordRequest request) {
-		 User user = userRepository.findByEmail(request.getEmail())
-	                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
 
-	        // ✅ Generate OTP
-	        String otp = String.format("%06d", new Random().nextInt(999999));
+		// new code
+		
+		 String email = request.getEmail();
 
-	        // ✅ Expiry = 5 minutes
-	        LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(5);
+		    User user = userRepository.findByEmail(email)
+		            .orElseThrow(() -> new RuntimeException("User not found"));
 
-	        // ✅ Save OTP
-	        PasswordResetToken token = tokenRepository.findByEmail(user.getEmail())
+		    // Generate OTP
+//		    String otp = String.valueOf(100000 + new Random().nextInt(900000));
+//		    LocalDateTime expiryTime = LocalDateTime.now().plusMinutes(5);
+
+
+	        // ✅ Generate secure OTP (6-digit)
+	        SecureRandom rnd = new SecureRandom();
+	        String otp = String.format("%06d", rnd.nextInt(1_000_000));
+
+	        // ✅ Hash the OTP before saving
+	        String hashedOtp = passwordEncoder.encode(otp);
+
+	        // ✅ Set expiry time
+	        Instant expiry = Instant.now().plus(5, ChronoUnit.MINUTES);
+	    
+	        // ✅ Create or update token record
+	        PasswordResetToken token = tokenRepository.findByEmail(email)
 	                .orElse(new PasswordResetToken());
-	        token.setEmail(user.getEmail());
-	        token.setOtp(otp);
-	        token.setExpiryTime(expiryTime);
+
+	        token.setEmail(email);
+	        token.setOtpHash(hashedOtp);
+	        token.setExpiryTime(expiry);
+	        token.setUsed(false);
+
 	        tokenRepository.save(token);
+		    // Send OTP via email
+		    SimpleMailMessage message = new SimpleMailMessage();
+		    message.setTo(email);
+		    message.setSubject("BookVerse - Password Reset OTP");
+		    message.setText("Your OTP is: " + otp + "\nThis OTP is valid for 5 minutes.");
+		    try {
+	            mailSender.send(message);
+	        } catch (MailException e) {
+	            throw new RuntimeException("Failed to send OTP. Please try again later.", e);
+	        }
 
-	        // ✅ Send OTP (later you can integrate with Email/SMS service)
-	        System.out.println("OTP for " + user.getEmail() + " is: " + otp);
+		    return "OTP sent successfully to " + email;
+	}
 
-	        return "OTP sent successfully to " + user.getEmail();
+	@Override
+	public String resetPassword(ResetPasswordRequest request) {
+		   PasswordResetToken token = tokenRepository.findByEmail(request.getEmail())
+		            .orElseThrow(() -> new RuntimeException("Invalid email or OTP"));
+
+		 // ✅ Check if OTP already used
+		    if (token.isUsed()) {
+		        throw new RuntimeException("OTP has already been used");
+		    }
+
+		    // ✅ Check if OTP is expired (using Instant now)
+		    if (token.getExpiryTime().isBefore(Instant.now())) {
+		        throw new RuntimeException("OTP has expired");
+		    }
+
+		    // ✅ Verify OTP with hash
+		    if (!passwordEncoder.matches(request.getOtp(), token.getOtpHash())) {
+		        throw new RuntimeException("Invalid OTP");
+		    }
+
+		    // Fetch user
+		    User user = userRepository.findByEmail(request.getEmail())
+		            .orElseThrow(() -> new RuntimeException("User not found"));
+
+		    // ✅ Check if new password is same as old password
+		    if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+		        throw new RuntimeException("New password cannot be the same as the old password");
+		    }
+
+		    // Encode and set new password
+		    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+		    userRepository.save(user);
+
+		    return "Password has been reset successfully";
 	}
 
 

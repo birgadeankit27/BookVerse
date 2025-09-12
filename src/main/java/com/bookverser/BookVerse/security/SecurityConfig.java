@@ -31,7 +31,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/cart/**", "/api/orders/**")) // Disable CSRF for APIs
             .authorizeHttpRequests(auth -> auth
                 // Auth endpoints
-                .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password").permitAll() // Public access
+                .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll() // Public access
                 .requestMatchers("/auth/register-admin").hasRole("ADMIN") // Admin-only registration
 
                 // Book endpoints

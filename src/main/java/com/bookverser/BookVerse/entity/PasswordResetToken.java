@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.entity;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
@@ -21,6 +22,9 @@ public class PasswordResetToken {
     private Long id;
 
     private String email;
-    private String otp;
-    private LocalDateTime expiryTime;
+    private String otpHash;   // store hashed OTP, not plain text
+
+    private Instant expiryTime;
+
+    private boolean used = false;  // mark as used after verification
 }

@@ -8,6 +8,7 @@ import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
+import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 
 public interface UserService {
     String register(SignupDto signupDto);
@@ -20,5 +21,5 @@ public interface UserService {
  // Change password
     String changePassword(String email, ChangePasswordRequest request);
     String forgotPassword(ForgotPasswordRequest request);
-
+    String resetPassword(ResetPasswordRequest request);
 }

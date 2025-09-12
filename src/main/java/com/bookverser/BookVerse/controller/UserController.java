@@ -4,6 +4,7 @@ import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
+import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
@@ -165,12 +166,30 @@ public class UserController {
         // ==================== ✅ Forgot Password (Request OTP)  ====================
         
         @PostMapping("/forgot-password")
-        public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+            public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
             try {
-                String response = userService.forgotPassword(request);
-                return ResponseEntity.ok(response);
+                String response = userService.forgotPassword(request); // Generates OTP and sends email
+                return ResponseEntity.ok().body(response);
             } catch (RuntimeException e) {
-                return ResponseEntity.status(404).body(e.getMessage());
+                // 404 Not Found if email or phone is invalid
+                if (e.getMessage().contains("not found")) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(e.getMessage());
+                }
+                // Other server errors
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to send OTP: " + e.getMessage());
             }
+        }
+        
+     // ==================== ✅ Reset Password (Request OTP)  ====================
+            @PostMapping("/reset-password")
+            public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+                try {
+                    String response = userService.resetPassword(request);
+                    return ResponseEntity.ok(response);
+                } catch (RuntimeException e) {
+                    return ResponseEntity.status(400).body(e.getMessage());
+                }
         }
 }
