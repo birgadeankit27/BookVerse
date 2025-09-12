@@ -19,6 +19,7 @@ import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
 
 import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
+import com.bookverser.BookVerse.exception.InvalidRequestException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 
 import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
@@ -68,6 +69,17 @@ public class BookController {
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}
 
+		return ResponseEntity.ok(bookDtos);
+	}
+
+	@GetMapping("/sort")
+	public ResponseEntity<List<BookDto>> sortBooks(@RequestParam(required = false) String sortBy) {
+		List<BookDto> bookDtos;
+		try {
+			bookDtos = bookServiceImpl.sortBooks(sortBy);
+		} catch (InvalidRequestException e) {
+			throw new InvalidRequestException("Invalid Request Exception");
+		}
 		return ResponseEntity.ok(bookDtos);
 	}
 
