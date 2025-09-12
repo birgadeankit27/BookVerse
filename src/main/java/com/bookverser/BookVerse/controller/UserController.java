@@ -1,7 +1,10 @@
 package com.bookverser.BookVerse.controller;
 
+import com.bookverser.BookVerse.dto.ChangePasswordRequest;
+import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
+import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
@@ -140,5 +143,53 @@ public class UserController {
             UserDto updatedUser = userService.updateUserProfile(userDetails.getUsername(), request);
             return ResponseEntity.ok(updatedUser);
         }
+        
+        // ==================== ✅ Change Password ====================
+        
+        @PutMapping("/change-password")
+        public ResponseEntity<?> changePassword(
+                @AuthenticationPrincipal UserDetails userDetails,
+                @Valid @RequestBody ChangePasswordRequest request) {
 
+            if (userDetails == null) {
+                return ResponseEntity.status(401).body("Unauthorized: Please login first");
+            }
+
+            try {
+                String message = userService.changePassword(userDetails.getUsername(), request);
+                return ResponseEntity.ok(message);
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
+        
+        // ==================== ✅ Forgot Password (Request OTP)  ====================
+        
+        @PostMapping("/forgot-password")
+            public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+            try {
+                String response = userService.forgotPassword(request); // Generates OTP and sends email
+                return ResponseEntity.ok().body(response);
+            } catch (RuntimeException e) {
+                // 404 Not Found if email or phone is invalid
+                if (e.getMessage().contains("not found")) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(e.getMessage());
+                }
+                // Other server errors
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to send OTP: " + e.getMessage());
+            }
+        }
+        
+     // ==================== ✅ Reset Password (Request OTP)  ====================
+            @PostMapping("/reset-password")
+            public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+                try {
+                    String response = userService.resetPassword(request);
+                    return ResponseEntity.ok(response);
+                } catch (RuntimeException e) {
+                    return ResponseEntity.status(400).body(e.getMessage());
+                }
+        }
 }

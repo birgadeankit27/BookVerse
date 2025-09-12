@@ -442,7 +442,16 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	public List<BookDto> sortBooks(String sortBy) {
-		// TODO Auto-generated method stub
-		return null;
+		List<Book> books;
+		if (sortBy.equalsIgnoreCase("priceAsc")) {
+			books = bookRepository.findAllByPriceAsc();
+		} else if (sortBy.equalsIgnoreCase("priceDesc")) {
+			books = bookRepository.findAllByPriceDesc();
+		} else if (sortBy.equalsIgnoreCase("rating")) {
+			books = bookRepository.findAllByRating();
+		} else {
+			books = bookRepository.findAllByLatest();
+		}
+		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
 	}
 }

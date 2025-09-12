@@ -28,7 +28,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	List<Book> findBySeller_Id(Long sellerId);
 
 	List<Book> findByCategory_Name(String categoryName);
-	
+
 	@Query("""
 			SELECT b
 			FROM Book b
@@ -42,6 +42,18 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	List<Book> findAllFilter(@Param("category") String category, @Param("minPrice") Double minPrice,
 			@Param("maxPrice") Double maxPrice, @Param("location") String location);
 
+	 @Query("SELECT b FROM Book b ORDER BY b.createdAt DESC")
+	    List<Book> findAllByLatest();
 
+	    @Query("SELECT b FROM Book b ORDER BY b.price ASC")
+	    List<Book> findAllByPriceAsc();
+
+	    @Query("SELECT b FROM Book b ORDER BY b.price DESC")
+	    List<Book> findAllByPriceDesc();
+
+	    @Query("SELECT b FROM Book b LEFT JOIN Review r ON r.book = b " +
+	           "GROUP BY b.id " +
+	           "ORDER BY COALESCE(AVG(r.rating), 0) DESC")
+	    List<Book> findAllByRating();
 
 }

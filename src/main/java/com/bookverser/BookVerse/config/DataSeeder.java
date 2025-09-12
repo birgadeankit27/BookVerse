@@ -35,7 +35,7 @@ public class DataSeeder {
             }
 
             // ✅ Create default Admin user
-            if (!userRepository.existsByEmail("admin@bookverse.com")) {
+            if (!userRepository.existsByEmail("bookverse.work@gmail.com")) {
                 Role adminRole = roleRepository.findByName("ROLE_ADMIN")
                         .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"));
                 Role sellerRole = roleRepository.findByName("ROLE_SELLER")
@@ -47,8 +47,8 @@ public class DataSeeder {
 
                 User admin = User.builder()
                         .name("admin")
-                        .email("admin@bookverse.com")
-                        .password(passwordEncoder.encode("admin123"))
+                        .email("bookverse.work@gmail.com")
+                        .password(passwordEncoder.encode("admin@123***"))
                         .roles(adminRoles)
                         .city("Pune")                // default value
                         .state("Maharashtra")        // default value
@@ -60,11 +60,11 @@ public class DataSeeder {
 
 
                 userRepository.save(admin);
-                System.out.println("✅ Created default admin: email='admin@bookverse.com', password='admin123'");
+                System.out.println("✅ Created default admin: email='bookverse.work@gmail.com', password='admin@123***'");
             }
 
             // ✅ Create default regular user
-            if (!userRepository.existsByEmail("ankit@bookverse.com")) {
+            if (!userRepository.existsByEmail("ankitbirgade@gmail.com")) {
                 Role sellerRole = roleRepository.findByName("ROLE_SELLER")
                         .orElseThrow(() -> new RuntimeException("ROLE_SELLER not found"));
                 Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
@@ -77,7 +77,7 @@ public class DataSeeder {
 
                 User user = User.builder()
                         .name("ankit")
-                        .email("ankit@bookverse.com")
+                        .email("ankitbirgade@gmail.com")
                         .password(passwordEncoder.encode("securePassword"))
                         .roles(userRoles)
                         .city("Mumbai")               // default value
@@ -89,7 +89,7 @@ public class DataSeeder {
           
 
                 userRepository.save(user);
-                System.out.println("✅ Created default user: email='ankit@bookverse.com', password='securePassword'");
+                System.out.println("✅ Created default user: email='ankitbirgade@gmail.com', password='securePassword'");
             }
         } catch (Exception e) {
             // Prevent app from failing if seeder has an error

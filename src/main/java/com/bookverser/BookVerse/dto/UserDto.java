@@ -22,11 +22,23 @@ public class UserDto {
     private String email;
 
     @NotNull
-    private String role; // BUYER / SELLER / ADMIN
+    private String role; // CUSTOMER / SELLER / ADMIN
 
     @Size(max = 255)
     private String address;
 
     @Pattern(regexp = "^\\+?[0-9]{10,15}$")
     private String phone;
+
+    @NotBlank(message = "City is required")
+    @Size(max = 50, message = "City must not exceed 50 characters")
+    private String city;
+
+    @NotBlank(message = "State is required")
+    @Size(max = 50, message = "State must not exceed 50 characters")
+    private String state;
+
+    @NotBlank(message = "Country is required")
+    @Size(max = 50, message = "Country must not exceed 50 characters")
+    private String country;
 }
