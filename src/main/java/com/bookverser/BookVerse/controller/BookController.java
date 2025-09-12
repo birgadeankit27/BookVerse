@@ -71,12 +71,6 @@ public class BookController {
 		return ResponseEntity.ok(bookDtos);
 	}
 
-	@GetMapping("/sort")
-	public ResponseEntity<List<BookDto>> sortBooks(@RequestParam(required = false) String sortBy) {
-		List<BookDto> bookDtos = bookServiceImpl.sortBooks(sortBy);
-		return ResponseEntity.ok(bookDtos);
-	}
-
 	@GetMapping("/category/{categoryName}")
 	public ResponseEntity<List<BookDto>> getBooksByCategory(@PathVariable String categoryName) {
 		List<BookDto> books = bookServiceImpl.getBooksByCategory(categoryName);
