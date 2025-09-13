@@ -38,10 +38,17 @@ public class GlobalException {
 		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
 	}
 
+
 	// Handle all other exceptions → 500
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
 		Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
 		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
+	
+	@ExceptionHandler(InvalidRequestException.class)
+	public ResponseEntity<String> invalidRequestException(InvalidRequestException ex) {
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NO_CONTENT);
+	}
+
 }

@@ -9,7 +9,7 @@ import com.bookverser.BookVerse.service.CartService;
 
 
 @Service
-public class CartServiceImpl {
+public class CartServiceImpl implements CartService {
 
 	@Override
 	public CartResponseDto addToCart(Long buyerId, AddToCartRequest request) {

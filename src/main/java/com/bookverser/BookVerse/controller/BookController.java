@@ -92,7 +92,7 @@ public class BookController {
         }
     }
 
-}
+
 
 
     @GetMapping("/getAll")
@@ -109,5 +109,32 @@ public class BookController {
                                   @RequestParam("file") MultipartFile file) throws IOException {
         return bookServiceImpl.uploadImage(bookId, file);
     }
+    
+    @GetMapping("/search")
+    public ResponseEntity<List<BookDto>> searchBooks(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) String isbn) {
+
+        List<BookDto> result = bookServiceImpl.searchBooks(title, author, categoryName, isbn);
+        return ResponseEntity.ok(result);
+    }
+    
+    @GetMapping("/featured")
+    public ResponseEntity<List<BookDto>> getFeaturedBooks() {
+        return ResponseEntity.ok(bookServiceImpl.getFeaturedBooks());
+    }
+
+    @PatchMapping("/{bookId}/feature")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookDto> markBookAsFeatured(
+            @PathVariable Long bookId,
+            @RequestParam boolean isFeatured) {
+        return ResponseEntity.ok(bookServiceImpl.markBookAsFeatured(bookId, isFeatured));
+    }
+
+ 
+
 }
 

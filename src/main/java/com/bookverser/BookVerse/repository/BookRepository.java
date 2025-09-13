@@ -20,24 +20,28 @@ import com.bookverser.BookVerse.entity.Category;
 public interface BookRepository extends JpaRepository<Book, Long> {
 
     boolean existsByIsbn(String isbn);
-
+    
+    
     @Query("SELECT b FROM Book b " +
-           "WHERE (:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(b.author) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:minPrice IS NULL OR b.price >= :minPrice) " +
-           "AND (:maxPrice IS NULL OR b.price <= :maxPrice)")
-    List<Book> searchBooks(@Param("keyword") String keyword,
-                           @Param("minPrice") Double minPrice,
-                           @Param("maxPrice") Double maxPrice);
-
+            "WHERE (:title IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
+            "AND (:author IS NULL OR LOWER(b.author) LIKE LOWER(CONCAT('%', :author, '%'))) " +
+            "AND (:categoryName IS NULL OR LOWER(b.category.name) LIKE LOWER(CONCAT('%', :categoryName, '%'))) " +
+            "AND (:isbn IS NULL OR LOWER(b.isbn) LIKE LOWER(CONCAT('%', :isbn, '%')))")
+    List<Book> searchBooks(@Param("title") String title,
+                           @Param("author") String author,
+                           @Param("categoryName") String categoryName,
+                           @Param("isbn") String isbn);
+   
+    
     List<Book> findBySeller_Id(Long sellerId);
+    
+    List<Book> findByCategory_Name(String categoryName);
+    
+    List<Book> findByFeaturedTrue();
+   
 
-public interface BookRepository extends JpaRepository<Book, Long>{
-	
-	
-	 boolean existsByIsbn(String isbn);
-	 List<Book> findByCategory_Name(String categoryName);
 
+	
 
 
 }
