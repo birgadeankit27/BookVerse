@@ -8,6 +8,7 @@ import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
+import com.bookverser.BookVerse.dto.UserResponseDto;
 import com.bookverser.BookVerse.entity.PasswordResetToken;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
@@ -306,6 +307,36 @@ public class UserServiceImpl implements UserService {
 		    userRepository.save(user);
 
 		    return "Password has been reset successfully";
+	}
+
+	@Override
+	public List<UserResponseDto> listUsers(String role, String status) {
+		List<User> users;
+
+        if (role != null && status != null) {
+            boolean isActive = status.equalsIgnoreCase("ACTIVE");
+            users = userRepository.findByRoles_NameAndIsActive(role.toUpperCase(), isActive);
+        } else if (role != null) {
+            users = userRepository.findByRoles_Name(role.toUpperCase());
+        } else if (status != null) {
+            boolean isActive = status.equalsIgnoreCase("ACTIVE");
+            users = userRepository.findByIsActive(isActive);
+        } else {
+            users = userRepository.findAll();
+        }
+
+        return users.stream()
+                .map(user -> {
+                    UserResponseDto dto = modelMapper.map(user, UserResponseDto.class);
+                    // Convert roles set to a single role string
+                    dto.setRole(user.getRoles().stream()
+                            .findFirst()
+                            .map(r -> r.getName())
+                            .orElse("USER"));
+                    dto.setStatus(user.isActive() ? "ACTIVE" : "INACTIVE");
+                    return dto;
+                })
+                .collect(Collectors.toList());
 	}
 
 
