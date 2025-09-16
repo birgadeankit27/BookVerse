@@ -17,14 +17,24 @@ import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.UserService;
 
+import java.io.IOException;
+
 import jakarta.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -307,6 +317,54 @@ public class UserServiceImpl implements UserService {
 		    userRepository.save(user);
 
 		    return "Password has been reset successfully";
+	}
+	
+	
+	@Value("${file.upload-dir}")
+	private String uploadDir;
+
+	// ✅ Max size = 2 MB (you can change)
+	private static final long MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+	// ✅ Allowed content types
+	private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png");
+
+	@Override
+	public String uploadProfilePicture(MultipartFile file, String email) throws IOException {
+	    // ================== ✅ VALIDATIONS ==================
+
+	    if (file.isEmpty()) {
+	        throw new RuntimeException("File is empty");
+	    }
+
+	    if (file.getSize() > MAX_FILE_SIZE) {
+	        throw new RuntimeException("File size exceeds 2MB limit");
+	    }
+
+	    if (!ALLOWED_TYPES.contains(file.getContentType())) {
+	        throw new RuntimeException("Only JPG and PNG files are allowed");
+	    }
+
+	    // ================== ✅ SAVE FILE ==================
+	    Path uploadPath = Paths.get(uploadDir);
+	    if (!Files.exists(uploadPath)) {
+	        Files.createDirectories(uploadPath);
+	    }
+
+	    String fileName = email + "_profile_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+	    Path filePath = uploadPath.resolve(fileName);
+
+	    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+	    String fileUrl = "/uploads/" + fileName;
+
+	    // ✅ Update user profile picture URL in DB
+	    User user = userRepository.findByEmail(email)
+	            .orElseThrow(() -> new RuntimeException("User not found"));
+	    user.setProfilePictureUrl(fileUrl);
+	    userRepository.save(user);
+
+	    return fileUrl;
 	}
 
 	@Override
