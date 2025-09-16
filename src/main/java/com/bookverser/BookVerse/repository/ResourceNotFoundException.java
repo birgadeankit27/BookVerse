@@ -1,4 +1,4 @@
-package com.bookverser.BookVerse.exception;
+package com.bookverser.BookVerse.repository;
 
 public class ResourceNotFoundException extends RuntimeException {
 	public ResourceNotFoundException(String msg) {

@@ -38,6 +38,27 @@ public class GlobalException {
 		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
 	}
 
+	@ExceptionHandler(InvalidPriceRangeException.class)
+	public ResponseEntity<String> handleInvalidPriceRange(InvalidPriceRangeException ex) {
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(CategoryNotFoundException.class)
+	public ResponseEntity<String> handleCategoryNotFound(CategoryNotFoundException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+	}
+
+	@ExceptionHandler(InvalidSortParameterException.class)
+	public ResponseEntity<String> handleInvalidSortParameter(InvalidSortParameterException ex) {
+	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(InvalidRequestException.class)
+	public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	}
+
+	
 	// Handle all other exceptions → 500
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {

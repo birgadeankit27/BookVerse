@@ -56,6 +56,8 @@ public class DataSeeder {
                         .address("Admin Address")
                         .phone("+911234567890")
                         .build();
+           
+
 
                 userRepository.save(admin);
                 System.out.println("✅ Created default admin: email='bookverse.work@gmail.com', password='admin@123***'");
@@ -72,6 +74,7 @@ public class DataSeeder {
                 userRoles.add(sellerRole);
                 userRoles.add(customerRole);
 
+
                 User user = User.builder()
                         .name("ankit")
                         .email("ankitbirgade@gmail.com")
@@ -83,6 +86,7 @@ public class DataSeeder {
                         .address("User Address")
                         .phone("+919876543210")
                         .build();
+          
 
                 userRepository.save(user);
                 System.out.println("✅ Created default user: email='ankitbirgade@gmail.com', password='securePassword'");
