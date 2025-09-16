@@ -9,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,8 +52,19 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    // Full address (optional: street, pin code)
     @Column(length = 255)
     private String address;
+
+    // Clean location fields for filtering
+    @Column(length = 50, nullable = false)
+    private String city;
+
+    @Column(length = 50, nullable = false)
+    private String state;
+
+    @Column(length = 50, nullable = false)
+    private String country;
 
     @Column(length = 20)
     private String phone;

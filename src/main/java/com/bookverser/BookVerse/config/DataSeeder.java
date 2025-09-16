@@ -49,6 +49,11 @@ public class DataSeeder {
                     .email("admin@bookverse.com")
                     .password(passwordEncoder.encode("admin123"))
                     .roles(adminRoles)
+                    .address("Admin HQ, Tech Park")
+                    .city("Mumbai")
+                    .state("Maharashtra")
+                    .country("India")
+                    .phone("9999999999")
                     .build();
 
             userRepository.save(admin);
@@ -71,6 +76,11 @@ public class DataSeeder {
                     .email("ankit@bookverse.com")
                     .password(passwordEncoder.encode("securePassword"))
                     .roles(userRoles)
+                    .address("User Colony, Main Street")
+                    .city("Delhi")
+                    .state("Delhi")
+                    .country("India")
+                    .phone("8888888888")
                     .build();
 
             userRepository.save(user);
