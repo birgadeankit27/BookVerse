@@ -8,6 +8,7 @@ import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
+import com.bookverser.BookVerse.dto.UserResponseDto;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
 import com.bookverser.BookVerse.service.UserService;
@@ -15,7 +16,11 @@ import com.bookverser.BookVerse.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+
 import java.io.IOException;
+
+import java.util.List;
+
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -198,6 +203,7 @@ public class UserController {
                     return ResponseEntity.status(400).body(e.getMessage());
                 }
         }
+
          // ==================== ✅ Upload Profile Picture API  ====================
             @PostMapping("/upload-profile-picture")
             public ResponseEntity<?> uploadProfilePicture(
@@ -221,5 +227,18 @@ public class UserController {
 
             // ✅ Record must be declared at class level
             public record UploadResponse(String message, String imageUrl) {}
+
+
+       // ==================== ✅  List All Users API (Admin Only)  ====================
+            
+            @GetMapping("/admin/users")
+            @PreAuthorize("hasRole('ADMIN')")  // Only ADMIN can access
+            public ResponseEntity<List<UserResponseDto>> listUsers(
+                    @RequestParam(required = false) String role,
+                    @RequestParam(required = false) String status) {
+
+                List<UserResponseDto> users = userService.listUsers(role, status);
+                return ResponseEntity.ok(users);
+            }
 
 }

@@ -3,11 +3,15 @@ package com.bookverser.BookVerse.service;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
+import com.bookverser.BookVerse.dto.UserResponseDto;
 import com.bookverser.BookVerse.entity.User;
 
 import java.io.IOException;
 
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
 
 import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
@@ -27,5 +31,9 @@ public interface UserService {
     String changePassword(String email, ChangePasswordRequest request);
     String forgotPassword(ForgotPasswordRequest request);
     String resetPassword(ResetPasswordRequest request);
+
     String uploadProfilePicture(MultipartFile file, String name) throws IOException;
+
+    List<UserResponseDto> listUsers(String role, String status);
+
 }
