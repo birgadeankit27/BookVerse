@@ -1,5 +1,5 @@
-package com.bookverser.BookVerse.security;
 
+package com.bookverser.BookVerse.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -16,9 +16,10 @@ import java.util.stream.Collectors;
 public class JwtUtil {
 
     private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-    private final long expirationTime = 1000 * 60 * 60 * 24;
+    private final long accessTokenExpirationTime = 1000 * 60 * 60 * 24; // 24 hours
+    private final long refreshTokenExpirationTime = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateAccessToken(UserDetails userDetails) {
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
@@ -27,7 +28,16 @@ public class JwtUtil {
                 .setSubject(userDetails.getUsername())
                 .claim("roles", roles)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationTime))
+                .signWith(key)
+                .compact();
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        return Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationTime))
                 .signWith(key)
                 .compact();
     }
@@ -36,9 +46,18 @@ public class JwtUtil {
         return getClaims(token).getSubject();
     }
 
-    public boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateAccessToken(String token, UserDetails userDetails) {
         try {
             return extractUsername(token).equals(userDetails.getUsername()) && !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean validateRefreshToken(String token) {
+        try {
+            getClaims(token); // Parse to verify signature and expiry
+            return !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
