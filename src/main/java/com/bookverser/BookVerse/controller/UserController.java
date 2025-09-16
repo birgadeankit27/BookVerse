@@ -11,7 +11,12 @@ import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
 import com.bookverser.BookVerse.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
+import java.io.IOException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +27,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/auth")
@@ -192,4 +198,28 @@ public class UserController {
                     return ResponseEntity.status(400).body(e.getMessage());
                 }
         }
+         // ==================== ✅ Upload Profile Picture API  ====================
+            @PostMapping("/upload-profile-picture")
+            public ResponseEntity<?> uploadProfilePicture(
+                    @RequestParam("file") MultipartFile file,
+                    @AuthenticationPrincipal UserDetails userDetails,
+                    HttpServletRequest request) {
+                try {
+                    // ✅ Pass email (username in Spring Security) to service
+                    String fileUrl = userService.uploadProfilePicture(file, userDetails.getUsername());
+
+                    // Build full URL
+                    String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                    String imageUrl = baseUrl + fileUrl;
+
+                    return ResponseEntity.ok(new UploadResponse("Profile picture uploaded", imageUrl));
+
+                } catch (IOException e) {
+                    return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
+                }
+            }
+
+            // ✅ Record must be declared at class level
+            public record UploadResponse(String message, String imageUrl) {}
+
 }

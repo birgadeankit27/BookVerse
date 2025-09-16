@@ -85,4 +85,7 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    
+ // Field to store profile picture URL
+    private String profilePictureUrl;
 }

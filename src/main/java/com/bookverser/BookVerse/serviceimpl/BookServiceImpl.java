@@ -51,53 +51,83 @@ public class BookServiceImpl implements BookService {
 	@Override
 	@Transactional
 	public BookDto addBook(CreateBookRequestDTO request) {
-		if (bookRepository.existsByIsbn(request.getIsbn())) {
-			throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
-		}
+//		if (bookRepository.existsByIsbn(request.getIsbn())) {
+//			throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
+//		}
+//
+//		// Get authenticated seller
+//		User seller = getAuthenticatedSeller();
+//
+//		// Fetch category
+//		Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
+//				() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
+//
+//		// Map DTO -> Entity
+//		Book book = new Book();
+//		book.setTitle(request.getTitle());
+//		book.setAuthor(request.getAuthor());
+//		book.setDescription(request.getDescription());
+//		book.setPrice(request.getPrice());
+//		book.setIsbn(request.getIsbn());
+//		book.setStock(request.getStock());
+//		book.setCondition(request.getCondition());
+//		book.setImageUrl(request.getImageUrl());
+//		book.setCategory(category);
+//		book.setSeller(seller);
+//		book.setStatus("AVAILABLE");
+//		book.setFeatured(false);
+//		book.setActive(true);
+//
+//		// Save book
+//		Book savedBook = bookRepository.save(book);
+//
+//		// Map Entity -> DTO
+//		BookDto bookDto = new BookDto();
+//		bookDto.setId(savedBook.getId());
+//		bookDto.setTitle(savedBook.getTitle());
+//		bookDto.setAuthor(savedBook.getAuthor());
+//		bookDto.setDescription(savedBook.getDescription());
+//		bookDto.setPrice(savedBook.getPrice());
+//		bookDto.setIsbn(savedBook.getIsbn());
+//		bookDto.setStock(savedBook.getStock());
+//		bookDto.setCondition(savedBook.getCondition());
+//		bookDto.setImageUrl(savedBook.getImageUrl());
+//		bookDto.setCategoryId(savedBook.getCategory().getId());
+//		bookDto.setSellerId(savedBook.getSeller().getId());
+//		bookDto.setStatus(savedBook.getStatus());
+//		bookDto.setFeatured(savedBook.isFeatured());
+//
+//		return bookDto;
+		 // ✅ Check for duplicate ISBN
+        if (bookRepository.existsByIsbn(request.getIsbn())) {
+            throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
+        }
 
-		// Get authenticated seller
-		User seller = getAuthenticatedSeller();
+        // ✅ Get authenticated seller
+        User seller = getAuthenticatedSeller();
 
-		// Fetch category
-		Category category = categoryRepository.findById(request.getCategoryId()).orElseThrow(
-				() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
+        // ✅ Fetch category
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException(
+                        "Category not found with id: " + request.getCategoryId()));
 
-		// Map DTO -> Entity
-		Book book = new Book();
-		book.setTitle(request.getTitle());
-		book.setAuthor(request.getAuthor());
-		book.setDescription(request.getDescription());
-		book.setPrice(request.getPrice());
-		book.setIsbn(request.getIsbn());
-		book.setStock(request.getStock());
-		book.setCondition(request.getCondition());
-		book.setImageUrl(request.getImageUrl());
-		book.setCategory(category);
-		book.setSeller(seller);
-		book.setStatus("AVAILABLE");
-		book.setFeatured(false);
-		book.setActive(true);
+        // ✅ Map DTO → Entity
+        Book book = modelMapper.map(request, Book.class);
+        book.setCategory(category);
+        book.setSeller(seller);
+        book.setStatus("AVAILABLE");
+        book.setFeatured(false);
+        book.setActive(true);
 
-		// Save book
-		Book savedBook = bookRepository.save(book);
+        // ✅ Save book
+        Book savedBook = bookRepository.save(book);
 
-		// Map Entity -> DTO
-		BookDto bookDto = new BookDto();
-		bookDto.setId(savedBook.getId());
-		bookDto.setTitle(savedBook.getTitle());
-		bookDto.setAuthor(savedBook.getAuthor());
-		bookDto.setDescription(savedBook.getDescription());
-		bookDto.setPrice(savedBook.getPrice());
-		bookDto.setIsbn(savedBook.getIsbn());
-		bookDto.setStock(savedBook.getStock());
-		bookDto.setCondition(savedBook.getCondition());
-		bookDto.setImageUrl(savedBook.getImageUrl());
-		bookDto.setCategoryId(savedBook.getCategory().getId());
-		bookDto.setSellerId(savedBook.getSeller().getId());
-		bookDto.setStatus(savedBook.getStatus());
-		bookDto.setFeatured(savedBook.isFeatured());
+        // ✅ Map Entity → DTO
+        BookDto bookDto = modelMapper.map(savedBook, BookDto.class);
+        bookDto.setCategoryId(savedBook.getCategory().getId());
+        bookDto.setSellerId(savedBook.getSeller().getId());
 
-		return bookDto;
+        return bookDto;
 	}
 
 	// Helper method to get authenticated seller
