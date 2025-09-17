@@ -1,7 +1,6 @@
 package com.bookverser.BookVerse.dto;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -33,8 +32,16 @@ public class UpdateBookRequestDTO {
     @Pattern(regexp = "NEW|GOOD|OLD", message = "Condition must be NEW, GOOD, or OLD")
     private String condition;
 
+    @Size(max = 255, message = "Image URL must be less than 255 characters")
     private String imageUrl;
 
-    @NotNull(message = "Category ID is mandatory")
-    private Long categoryId;
+    private Long categoryId; // optional, but can be updated
+
+    @Pattern(regexp = "AVAILABLE|UNAVAILABLE|SOLD_OUT", 
+             message = "Status must be AVAILABLE, UNAVAILABLE, or SOLD_OUT")
+    private String status;
+
+    private Boolean isFeatured;
+
+    private Boolean isActive;
 }
