@@ -9,6 +9,7 @@ import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.dto.UserResponseDto;
+import com.bookverser.BookVerse.dto.UserStatusResponse;
 import com.bookverser.BookVerse.entity.PasswordResetToken;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
@@ -396,6 +397,21 @@ public class UserServiceImpl implements UserService {
                 })
                 .collect(Collectors.toList());
 	}
+	
+	
+	 // ✅ Block or Unblock user
+    public UserStatusResponse updateUserStatus(Long userId, boolean isActive) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setActive(isActive);
+        userRepository.save(user);
+
+        UserStatusResponse response = modelMapper.map(user, UserStatusResponse.class);
+        response.setStatus(user.isActive() ? "UNBLOCK" : "BLOCKED");
+
+        return response;
+    }
 
 
 	

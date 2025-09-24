@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -46,7 +47,8 @@ public interface BookService {
      * @param maxPrice Maximum price filter (optional).
      * @return Page<BookDTO> of in-stock books.
      */
-    Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice);
+    Page<BookDto> getAllBooks(Pageable pageable, String category, String author, BigDecimal minPrice, BigDecimal maxPrice);
+
 
     /**
      * Get a book by its ID (BOOK:PUBLIC:GET-BY-ID).
@@ -155,7 +157,7 @@ public interface BookService {
     /**
      * Filter books by category, price range, and location
      */
-    List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location);
+    List<BookDto> filterBooks(String category, BigDecimal minPrice, BigDecimal maxPrice, String location);
 
     /**
      * Sort books by latest, price, or rating

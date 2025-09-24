@@ -24,8 +24,8 @@ public class Cart {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "buyer_id", nullable = false)
-    private User buyer;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private User customer;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -35,6 +35,11 @@ public class Cart {
     @Column(nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal totalPrice = BigDecimal.ZERO;
+   // ✅ Changed from BigDecimal → double
+//    @NotNull(message = "Total price is required")
+//    @Column(nullable = false)
+//    @Builder.Default
+//    private double totalPrice = 0.0;
 
     @PastOrPresent(message = "Created date cannot be in the future")
     @Column(name = "created_at", nullable = false, updatable = false)

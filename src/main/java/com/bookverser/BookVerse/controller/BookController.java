@@ -1,6 +1,7 @@
 package com.bookverser.BookVerse.controller;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +70,7 @@ public class BookController {
 
 	@GetMapping("/filter")
 	public ResponseEntity<List<BookDto>> filterBooks(@RequestParam(required = false) String category,
-			@RequestParam(required = false) Double minPrice, @RequestParam(required = false) Double maxPrice,
+			@RequestParam(required = false) BigDecimal minPrice, @RequestParam(required = false)BigDecimal maxPrice,
 			@RequestParam(required = false) String location) {
 		List<BookDto> bookDtos = bookServiceImpl.filterBooks(category, minPrice, maxPrice, location);
 
@@ -148,8 +149,8 @@ public class BookController {
 
 	@GetMapping("/getAll")
 	public Page<BookDto> getAllBooks(@RequestParam(required = false) String category,
-			@RequestParam(required = false) String author, @RequestParam(required = false) Double minPrice,
-			@RequestParam(required = false) Double maxPrice, Pageable pageable) {
+			@RequestParam(required = false) String author, @RequestParam(required = false) BigDecimal minPrice,
+			@RequestParam(required = false) BigDecimal maxPrice, Pageable pageable) {
 		return bookServiceImpl.getAllBooks(pageable, category, author, minPrice, maxPrice);
 	}
 

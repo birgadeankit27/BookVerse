@@ -9,6 +9,7 @@ import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.dto.UserResponseDto;
+import com.bookverser.BookVerse.dto.UserStatusResponse;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
 import com.bookverser.BookVerse.service.UserService;
@@ -240,5 +241,17 @@ public class UserController {
                 List<UserResponseDto> users = userService.listUsers(role, status);
                 return ResponseEntity.ok(users);
             }
+            
+            // ====================✅ Block/Unblock API ====================
+            @PutMapping("/admin/users/{id}/status")
+            @PreAuthorize("hasRole('ADMIN')")
+            public ResponseEntity<UserStatusResponse> updateUserStatus(
+                    @PathVariable Long id,
+                    @RequestParam boolean active) {
+                UserStatusResponse response = userService.updateUserStatus(id, active);
+                return ResponseEntity.ok(response);
+            }
+            
+            
 
 }

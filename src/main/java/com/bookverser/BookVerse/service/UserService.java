@@ -4,6 +4,7 @@ import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.dto.UserResponseDto;
+import com.bookverser.BookVerse.dto.UserStatusResponse;
 import com.bookverser.BookVerse.entity.User;
 
 import java.io.IOException;
@@ -35,5 +36,6 @@ public interface UserService {
     String uploadProfilePicture(MultipartFile file, String name) throws IOException;
 
     List<UserResponseDto> listUsers(String role, String status);
+	UserStatusResponse updateUserStatus(Long id, boolean active);
 
 }

@@ -28,34 +28,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/cart/**", "/api/orders/**")) // Disable CSRF for APIs
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/carts/**", "/api/orders/**"))
             .authorizeHttpRequests(auth -> auth
-                // Auth endpoints
-                .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll() // Public access
-                .requestMatchers("/auth/register-admin").hasRole("ADMIN") // Admin-only registration
+                // Public endpoints
+                .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll()
+                .requestMatchers("/auth/register-admin").hasRole("ADMIN")
 
                 // Book endpoints
-                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Add books
-                .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN") // Get books
-                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Update books
-                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Delete books
+                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
 
                 // Cart endpoints
-                .requestMatchers("/api/carts/**").hasRole("CUSTOMER") // Only buyers can manage cart
+                .requestMatchers("/api/carts/**").hasAnyAuthority("ROLE_CUSTOMER") // must match JWT authorities
 
                 // Order endpoints
-                .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN") // Customers and admin can access orders
+                .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
 
-                .anyRequest().authenticated() // All other endpoints require authentication
+                .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless JWT
-            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
