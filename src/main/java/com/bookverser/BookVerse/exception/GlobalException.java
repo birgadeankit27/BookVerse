@@ -58,6 +58,21 @@ public class GlobalException {
 	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
 	}
 
+	  @ExceptionHandler(BookNotFoundException.class)
+	    public ResponseEntity<String> handleBookNotFound(BookNotFoundException ex) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+	    }
+
+	    @ExceptionHandler(InvalidQuantityException.class)
+	    public ResponseEntity<String> handleInvalidQuantity(InvalidQuantityException ex) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+	    }
+          
+	    @ExceptionHandler(CartItemNotFoundException.class)
+	    public ResponseEntity<String> handleCartItemNotFound(CartItemNotFoundException ex) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+	    }
+
 	
 	// Handle all other exceptions → 500
 	@ExceptionHandler(Exception.class)

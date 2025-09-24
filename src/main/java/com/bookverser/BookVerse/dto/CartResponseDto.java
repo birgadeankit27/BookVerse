@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 public class CartResponseDto {
     private Long cartId;
-    private Long buyerId;
+    private Long customerId;
     private List<CartItemDto> items;
-    private BigDecimal totalPrice;
+    private BigDecimal totalPrice;  // ✅ Changed from double → BigDecimal
 }
