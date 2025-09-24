@@ -7,9 +7,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import java.util.stream.Collectors;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,140 +39,111 @@ import com.bookverser.BookVerse.exception.DuplicateIsbnException;
 import com.bookverser.BookVerse.exception.InvalidPriceRangeException;
 import com.bookverser.BookVerse.exception.InvalidSortParameterException;
 import com.bookverser.BookVerse.exception.ResourceNotFoundException;
-
 import com.bookverser.BookVerse.exception.UnauthorizedException;
-
 import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.repository.CategoryRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.security.CustomUserDetails;
 import com.bookverser.BookVerse.service.BookService;
-
-import com.bookverser.BookVerse.exception.ResourceNotFoundException;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
 import jakarta.transaction.Transactional;
-import com.bookverser.BookVerse.exception.UnauthorizedException;
+
 @Service
 public class BookServiceImpl implements BookService {
 
-	@Autowired
-	private BookRepository bookRepository;
+    @Autowired
+    private BookRepository bookRepository;
 
-	@Autowired
-	private CategoryRepository categoryRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Autowired
-	private ModelMapper modelMapper;
+    @Autowired
+    private ModelMapper modelMapper;
 
-	// ------------------- Add Book -------------------
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
-	// Inject upload directory from application.properties
-	@Value("${file.upload-dir}")
-	private String uploadDir;
+    // ------------------- Add Book -------------------
+    @Override
+    @Transactional
+    public BookDto addBook(CreateBookRequestDTO request) {
+        if (bookRepository.existsByIsbn(request.getIsbn())) {
+            throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
+        }
 
-	
-	@Override
-	@Transactional
-	public BookDto addBook(CreateBookRequestDTO request) {
+        User seller = getAuthenticatedSeller();
 
-	    // ✅ Check for duplicate ISBN
-	    if (bookRepository.existsByIsbn(request.getIsbn())) {
-	        throw new DuplicateIsbnException("ISBN already exists: " + request.getIsbn());
-	    }
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
 
-	    // ✅ Get authenticated seller
-	    User seller = getAuthenticatedSeller();
+        Book book = modelMapper.map(request, Book.class);
 
-	    // ✅ Fetch category
-	    Category category = categoryRepository.findById(request.getCategoryId())
-	            .orElseThrow(() -> new CategoryNotFoundException(
-	                    "Category not found with id: " + request.getCategoryId()));
+        long id = System.currentTimeMillis() * 1000;
+        book.setId(id);
 
-	    // ✅ Map DTO → Entity
-	    Book book = modelMapper.map(request, Book.class);
+        book.setCategory(category);
+        book.setSeller(seller);
+        book.setStatus("AVAILABLE");
+        book.setFeatured(false);
+        book.setActive(true);
 
-	    // ✅ Generate custom ID (timestamp + random)
-	    long id = System.currentTimeMillis() * 1000  ;
-	    book.setId(id);
+        Book savedBook = bookRepository.save(book);
 
-	    book.setCategory(category);
-	    book.setSeller(seller);
-	    book.setStatus("AVAILABLE");
-	    book.setFeatured(false);
-	    book.setActive(true);
+        BookDto bookDto = modelMapper.map(savedBook, BookDto.class);
+        bookDto.setCategoryId(savedBook.getCategory().getId());
+        bookDto.setSellerId(savedBook.getSeller().getId());
 
-	    // ✅ Save book
-	    Book savedBook = bookRepository.save(book);
+        return bookDto;
+    }
 
-	    // ✅ Map Entity → DTO
-	    BookDto bookDto = modelMapper.map(savedBook, BookDto.class);
-	    bookDto.setCategoryId(savedBook.getCategory().getId());
-	    bookDto.setSellerId(savedBook.getSeller().getId());
+    private User getAuthenticatedSeller() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        return userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+    }
 
-	    return bookDto;
-	}
+    // ------------------- Get Books By Seller -------------------
+    @Override
+    public List<BookDto> getBooksBySeller(Long sellerId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
 
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-	// Helper: Get authenticated seller
-	private User getAuthenticatedSeller() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated()) {
-			throw new RuntimeException("User not authenticated");
-		}
-		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        if (!isAdmin && !userDetails.getId().equals(sellerId)) {
+            throw new UnauthorizedException("You are not allowed to access books of another seller");
+        }
 
-		return userRepository.findById(userDetails.getId())
-				.orElseThrow(() -> new RuntimeException("Authenticated user not found"));
-	}
+        List<Book> books = bookRepository.findBySeller_Id(sellerId);
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException("No books found for seller with ID: " + sellerId);
+        }
 
-	// ------------------- Get Books By Seller -------------------
+        return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
+    }
 
-	@Override
-	public List<BookDto> getBooksBySeller(Long sellerId) {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated()) {
-			throw new UnauthorizedException("User not authenticated");
-		}
+    @Override
+    public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, BigDecimal minPrice, BigDecimal maxPrice) {
+        Page<Book> books = bookRepository.findAll(pageable);
+        return books.map(book -> modelMapper.map(book, BookDto.class));
+    }
 
-		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-
-		// Check if user is the same seller OR is an admin
-		boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-		if (!isAdmin && !userDetails.getId().equals(sellerId)) {
-			throw new UnauthorizedException("You are not allowed to access books of another seller");
-		}
-
-		List<Book> books = bookRepository.findBySeller_Id(sellerId);
-
-		if (books.isEmpty()) {
-			throw new ResourceNotFoundException("No books found for seller with ID: " + sellerId);
-		}
-
-		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
-	}
-
-	@Override
-	 public Page<BookDto> getAllBooks(Pageable pageable, String category, String author,
-             BigDecimal minPrice, BigDecimal maxPrice) {
-            Page<Book> books = bookRepository.findAll(pageable); // Later add filters
-            return books.map(book -> modelMapper.map(book, BookDto.class));
-
-	}
-
-   
     @Override
     @Transactional
     public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
-       
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
 
@@ -185,7 +154,7 @@ public class BookServiceImpl implements BookService {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User authUser = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
-        
+
         boolean isOwner = book.getSeller() != null && book.getSeller().getId().equals(authUser.getId());
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
@@ -198,7 +167,7 @@ public class BookServiceImpl implements BookService {
             throw new IllegalArgumentException("Stock cannot be negative.");
         }
 
-        if (request.getPrice() != null && request.getPrice() <= 0) {
+        if (request.getPrice() != null && request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be positive.");
         }
 
@@ -209,9 +178,11 @@ public class BookServiceImpl implements BookService {
         if (request.getStock() != null) book.setStock(request.getStock());
         if (request.getCondition() != null) book.setCondition(request.getCondition());
         if (request.getImageUrl() != null) book.setImageUrl(request.getImageUrl());
+
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with id: " + request.getCategoryId()));
         book.setCategory(category);
+
         Book updated = bookRepository.save(book);
         BookDto dto = modelMapper.map(updated, BookDto.class);
         dto.setCategoryId(updated.getCategory().getId());
@@ -222,9 +193,9 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional
     public void deleteBook(Long bookId) {
-        
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
@@ -240,250 +211,186 @@ public class BookServiceImpl implements BookService {
         if (!isOwner && !isAdmin) {
             throw new UnauthorizedException("Only book owner or admin can delete this book");
         }
-        
+
         book.setActive(false);
         bookRepository.save(book);
     }
 
+    @Override
+    public BookDto getBookById(Long bookId) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
 
-  
-	@Override
-	public BookDto getBookById(Long bookId) {
-		 Book book = bookRepository.findById(bookId)
-	                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(),
+                book.getPrice(), book.getIsbn(), book.getStock(), book.getCondition(),
+                book.getImageUrl(), book.getCategory().getId());
+    }
 
-	        return new BookDto(
-	                book.getId(),
-	                book.getTitle(),
-	                book.getAuthor(),
-	                book.getDescription(),
-	                book.getPrice(),
-	                book.getIsbn(),
-	                book.getStock(),
-	                book.getCondition(),
-	                book.getImageUrl(),
-	                book.getCategory().getId()
-	        );
-				
-	}
+    @Override
+    public List<BookDto> getBooksByCategory(String categoryName) {
+        List<Book> books = bookRepository.findByCategory_Name(categoryName);
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException("No books found for category: " + categoryName);
+        }
+        return books.stream().map(book -> modelMapper.map(book, BookDto.class)).toList();
+    }
 
+    @Override
+    public List<BookDto> getBooksByCategory(Long categoryId) {
+        return null; // TODO implement
+    }
 
-	
-	
-	
-	 @Override
-	    public List<BookDto> getBooksByCategory(String categoryName) {
-	        List<Book> books = bookRepository.findByCategory_Name(categoryName);
+    @Override
+    public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        book.setStock(request.getStock());
+        bookRepository.save(book);
 
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(),
+                book.getPrice(), book.getIsbn(), book.getStock(), book.getCondition(),
+                book.getImageUrl(), book.getCategory().getId());
+    }
 
-	        if (books.isEmpty()) {
-	            throw new ResourceNotFoundException(
-	                    "No books found for category: " + categoryName);
-	        }
-     
-	        return books.stream()
-	                .map(book -> modelMapper.map(book, BookDto.class))
-	                .toList();
-	    }
+    @Override
+    public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
 
-	@Override
-	public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
 
-		// TODO implement update logic
+        File dir = new File(uploadDir);
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new IOException("Failed to create upload directory: " + uploadDir);
+        }
 
-		return null;
-	}
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = Paths.get(uploadDir, fileName);
 
-	@Override
-	public void deleteBook(Long bookId) {
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new IOException("Failed to save file: " + fileName, e);
+        }
 
-	}
+        String imageUrl = "/uploads/" + fileName;
+        book.setImageUrl(imageUrl);
+        bookRepository.save(book);
 
-	@Override
-	public List<BookDto> getBooksByCategory(String categoryName) {
-		List<Book> books = bookRepository.findByCategory_Name(categoryName);
-		if (books.isEmpty()) {
-			return List.of();
-		}
-		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).toList();
-	}
+        return modelMapper.map(book, BookDto.class);
+    }
 
-	@Override
-	public List<BookDto> getBooksByCategory(Long categoryId) {
-		return null;
-	}
+    @Override
+    @Transactional
+    public void bulkImportBooks(MultipartFile file) throws IOException {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
 
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            throw new UnauthorizedException("Only admins can bulk import books");
+        }
 
-	@Override
-	public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-		  Book book = bookRepository.findById(bookId)
-	                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
-	        book.setStock(request.getStock());
-	        bookRepository.save(book);
+        String filename = file.getOriginalFilename();
+        if (filename == null || (!filename.endsWith(".csv") && !filename.endsWith(".json"))) {
+            throw new IllegalArgumentException("Invalid file format. Only CSV and JSON are supported.");
+        }
 
-	        return new BookDto(
-	                book.getId(),
-	                book.getTitle(),
-	                book.getAuthor(),
-	                book.getDescription(),
-	                book.getPrice(),
-	                book.getIsbn(),
-	                book.getStock(),
-	                book.getCondition(),
-	                book.getImageUrl(),
-	                book.getCategory().getId()
-	        );
-				
-	}
+        List<Book> books;
+        if (filename.endsWith(".csv")) {
+            books = parseCsv(file);
+        } else {
+            books = parseJson(file);
+        }
 
+        var seenIsbns = new java.util.HashSet<String>();
+        for (Book b : books) {
+            if (!seenIsbns.add(b.getIsbn())) {
+                throw new DuplicateIsbnException("Duplicate ISBN in file: " + b.getIsbn());
+            }
+        }
 
-	@Override
-	public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
-		Book book = bookRepository.findById(bookId)
-				.orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        for (Book b : books) {
+            if (bookRepository.existsByIsbn(b.getIsbn())) {
+                throw new DuplicateIsbnException("Duplicate ISBN already exists in DB: " + b.getIsbn());
+            }
+        }
 
-		if (file.isEmpty()) {
-			throw new IllegalArgumentException("Uploaded file is empty");
-		}
+        bookRepository.saveAll(books);
+    }
 
-		File dir = new File(uploadDir);
-		if (!dir.exists()) {
-			boolean created = dir.mkdirs();
-			if (!created) {
-				throw new IOException("Failed to create upload directory: " + uploadDir);
-			}
-		}
+    private List<Book> parseCsv(MultipartFile file) throws IOException {
+        List<Book> books = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String header = br.readLine();
+            String line;
 
-		String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-		Path filePath = Paths.get(uploadDir, fileName);
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
 
-		try {
-			Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException e) {
-			throw new IOException("Failed to save file: " + fileName, e);
-		}
+                if (parts.length < 10) {
+                    throw new IllegalArgumentException("Invalid CSV format. Expected 10 fields, got: " + parts.length);
+                }
 
-		String imageUrl = "/uploads/" + fileName;
-		book.setImageUrl(imageUrl);
-		bookRepository.save(book);
+                BulkImportBookRequestDTO dto = new BulkImportBookRequestDTO();
+                dto.setIsbn(parts[0].trim());
+                dto.setTitle(parts[1].trim());
+                dto.setAuthor(parts[2].trim());
+                dto.setPrice(new BigDecimal(parts[3].trim()));
+                dto.setDescription(parts[4].trim());
+                dto.setImageUrl(parts[5].trim());
+                dto.setCategoryId(Long.parseLong(parts[6].trim()));
+                Long sellerId = Long.parseLong(parts[7].trim());
+                dto.setStock(Integer.parseInt(parts[8].trim()));
+                dto.setCondition(parts[9].trim());
 
-		return modelMapper.map(book, BookDto.class);
-	}
+                if (!dto.getCondition().matches("NEW|GOOD|OLD")) {
+                    throw new IllegalArgumentException("Invalid condition value: " + dto.getCondition());
+                }
 
-	@Override
-	@Transactional
-	public void bulkImportBooks(MultipartFile file) throws IOException {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth == null || !auth.isAuthenticated()) {
-			throw new UnauthorizedException("User not authenticated");
-		}
+                Category category = categoryRepository.findById(dto.getCategoryId())
+                        .orElseThrow(() -> new CategoryNotFoundException("Category not found: " + dto.getCategoryId()));
+                User seller = userRepository.findById(sellerId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Seller not found: " + sellerId));
 
-		// ✅ Check if admin
-		boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-		if (!isAdmin) {
-			throw new UnauthorizedException("Only admins can bulk import books");
-		}
+                Book book = new Book();
+                book.setIsbn(dto.getIsbn());
+                book.setTitle(dto.getTitle());
+                book.setAuthor(dto.getAuthor());
+                book.setPrice(dto.getPrice());
+                book.setDescription(dto.getDescription());
+                book.setImageUrl(dto.getImageUrl());
+                book.setCategory(category);
+                book.setSeller(seller);
+                book.setStock(dto.getStock());
+                book.setCondition(dto.getCondition());
+                book.setStatus("AVAILABLE");
+                book.setFeatured(false);
+                book.setActive(true);
 
-		String filename = file.getOriginalFilename();
-		if (filename == null || (!filename.endsWith(".csv") && !filename.endsWith(".json"))) {
-			throw new IllegalArgumentException("Invalid file format. Only CSV and JSON are supported.");
-		}
+                books.add(book);
+            }
+        }
+        return books;
+    }
 
-		List<Book> books;
-		if (filename.endsWith(".csv")) {
-			books = parseCsv(file);
-		} else {
-			books = parseJson(file);
-		}
-
-		// ✅ Check duplicates inside file
-		var seenIsbns = new java.util.HashSet<String>();
-		for (Book b : books) {
-			if (!seenIsbns.add(b.getIsbn())) {
-				throw new DuplicateIsbnException("Duplicate ISBN in file: " + b.getIsbn());
-			}
-		}
-
-		// ✅ Check duplicates against DB
-		for (Book b : books) {
-			if (bookRepository.existsByIsbn(b.getIsbn())) {
-				throw new DuplicateIsbnException("Duplicate ISBN already exists in DB: " + b.getIsbn());
-			}
-		}
-
-		// ✅ Save all books
-		bookRepository.saveAll(books);
-	}
-
-	private List<Book> parseCsv(MultipartFile file) throws IOException {
-		 List<Book> books = new ArrayList<>();
-	        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-	            String header = br.readLine(); // Skip header
-	            String line;
-
-	            while ((line = br.readLine()) != null) {
-	                String[] parts = line.split(",");
-
-	                if (parts.length < 10) {
-	                    throw new IllegalArgumentException("Invalid CSV format. Expected 10 fields, got: " + parts.length);
-	                }
-
-	                BulkImportBookRequestDTO dto = new BulkImportBookRequestDTO();
-	                dto.setIsbn(parts[0].trim());
-	                dto.setTitle(parts[1].trim());
-	                dto.setAuthor(parts[2].trim());
-	                dto.setPrice(new BigDecimal(parts[3].trim())); // ✅ changed to BigDecimal
-	                dto.setDescription(parts[4].trim());
-	                dto.setImageUrl(parts[5].trim());
-	                dto.setCategoryId(Long.parseLong(parts[6].trim()));
-	                Long sellerId = Long.parseLong(parts[7].trim());
-	                dto.setStock(Integer.parseInt(parts[8].trim()));
-	                dto.setCondition(parts[9].trim());
-
-	                if (!dto.getCondition().matches("NEW|GOOD|OLD")) {
-	                    throw new IllegalArgumentException("Invalid condition value: " + dto.getCondition());
-	                }
-
-	                Category category = categoryRepository.findById(dto.getCategoryId())
-	                        .orElseThrow(() -> new CategoryNotFoundException("Category not found: " + dto.getCategoryId()));
-	                User seller = userRepository.findById(sellerId)
-	                        .orElseThrow(() -> new ResourceNotFoundException("Seller not found: " + sellerId));
-
-	                Book book = new Book();
-	                book.setIsbn(dto.getIsbn());
-	                book.setTitle(dto.getTitle());
-	                book.setAuthor(dto.getAuthor());
-	                book.setPrice(dto.getPrice()); // ✅ BigDecimal
-	                book.setDescription(dto.getDescription());
-	                book.setImageUrl(dto.getImageUrl());
-	                book.setCategory(category);
-	                book.setSeller(seller);
-	                book.setStock(dto.getStock());
-	                book.setCondition(dto.getCondition());
-	                book.setStatus("AVAILABLE");
-	                book.setFeatured(false);
-	                book.setActive(true);
-
-	                books.add(book);
-	            }
-	        }
-	        return books;
-	}
-
-	private List<Book> parseJson(MultipartFile file) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
+    private List<Book> parseJson(MultipartFile file) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         List<Map<String, Object>> rawList = mapper.readValue(file.getInputStream(),
-                new TypeReference<List<Map<String, Object>>>() {
-                });
+                new TypeReference<List<Map<String, Object>>>() {});
 
         List<Book> books = new ArrayList<>();
         for (Map<String, Object> map : rawList) {
             String isbn = (String) map.get("isbn");
             String title = (String) map.get("title");
             String author = (String) map.get("author");
-            BigDecimal price = new BigDecimal(map.get("price").toString()); // ✅ BigDecimal
+            BigDecimal price = new BigDecimal(map.get("price").toString());
             String description = (String) map.getOrDefault("description", "");
             String imageUrl = (String) map.getOrDefault("imageUrl", "");
             Long categoryId = Long.valueOf(map.get("categoryId").toString());
@@ -504,7 +411,7 @@ public class BookServiceImpl implements BookService {
             book.setIsbn(isbn);
             book.setTitle(title);
             book.setAuthor(author);
-            book.setPrice(price); // ✅ BigDecimal
+            book.setPrice(price);
             book.setDescription(description);
             book.setImageUrl(imageUrl);
             book.setCategory(category);
@@ -519,28 +426,25 @@ public class BookServiceImpl implements BookService {
         }
 
         return books;
-	}
+    }
 
-	@Override
-	public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
+        return null; // TODO implement
+    }
 
-	@Override
-	public BookDto featureBook(Long bookId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public BookDto featureBook(Long bookId) {
+        return null; // TODO implement
+    }
 
-	@Override
-	public List<BookDto> searchBooks(String title, String author, String isbn) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public List<BookDto> searchBooks(String title, String author, String isbn) {
+        return null; // TODO implement
+    }
 
-	@Override
-	public List<BookDto> filterBooks(String category, BigDecimal minPrice, BigDecimal maxPrice, String location) {
+    @Override
+    public List<BookDto> filterBooks(String category, BigDecimal minPrice, BigDecimal maxPrice, String location) {
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
             throw new InvalidPriceRangeException("Min price must be smaller than max price");
         }
@@ -553,7 +457,7 @@ public class BookServiceImpl implements BookService {
         }
 
         return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
-    	}
+    }
 
 	@Override
 	public List<BookDto> sortBooks(String sortBy) {

@@ -8,12 +8,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Order Entity
- * Represents an order in the database, including buyer, items, and shipping details.
- * - Depends on the books table for order items (via OrderItem entity).
- * - Uses cascade and orphanRemoval to manage OrderItem lifecycle.
- */
 @Entity
 @Table(name = "orders")
 @Data
@@ -22,21 +16,17 @@ import java.util.List;
 @Builder
 public class Order {
 
-    public enum Status {
-        PENDING, SHIPPED, DELIVERED, CANCELLED
-    }
-
-    public enum PaymentStatus {
-        PAID, COD, FAILED
-    }
+    public enum Status { PENDING, SHIPPED, DELIVERED, CANCELLED }
+    public enum PaymentStatus { PAID, COD, FAILED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "buyer_id", nullable = false)
-    private User buyer;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private User customer;
+
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -55,13 +45,9 @@ public class Order {
     @Column(nullable = false)
     private PaymentStatus paymentStatus = PaymentStatus.COD;
 
-    @PastOrPresent(message = "Created date cannot be in the future")
+    @PastOrPresent
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cart_id")
-    private Cart cart;
 
     @PrePersist
     protected void onCreate() {

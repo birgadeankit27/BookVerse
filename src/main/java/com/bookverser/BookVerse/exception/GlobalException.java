@@ -1,125 +1,102 @@
 package com.bookverser.BookVerse.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalException {
 
-
-    // Validation errors → 400
+    // Handles validation errors (e.g., @Valid annotations)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-        return new ResponseEntity<>("Validation failed: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            errors.put(error.getField(), error.getDefaultMessage()));
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
-
-    // Unauthorized access → 403
+    
+    // Handles unauthorized access errors
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED); // Corrected to 401 Unauthorized
     }
 
-    // Resource not found → 404
+    // Handles not found errors for resources
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<String> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+    
+    // Handles not found errors for categories
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<String> handleCategoryNotFound(CategoryNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
-    // Duplicate ISBN → 409
+    // Handles errors for duplicate ISBNs
     @ExceptionHandler(DuplicateIsbnException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateIsbn(DuplicateIsbnException ex) {
         Map<String, String> error = new HashMap<>();
         error.put("error", ex.getMessage());
-        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409 Conflict
     }
 
-    // Username not found → 404
+    // Handles errors for user not found cases
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
-    // Fallback: Internal server error → 500
+    // Handles errors for invalid price ranges
+    @ExceptionHandler(InvalidPriceRangeException.class)
+    public ResponseEntity<String> handleInvalidPriceRange(InvalidPriceRangeException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // Handles errors for invalid sort parameters
+    @ExceptionHandler(InvalidSortParameterException.class)
+    public ResponseEntity<String> handleInvalidSortParameter(InvalidSortParameterException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    
+    // Handles general invalid request errors
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // Handles errors specific to the place order functionality
+    // This is a new exception from your service implementation
+    @ExceptionHandler(BookNotFoundException.class)
+    public ResponseEntity<String> handleBookNotFoundException(BookNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<String> handleInsufficientStockException(InsufficientStockException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidAddressException.class)
+    public ResponseEntity<String> handleInvalidAddressException(InvalidAddressException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(PaymentFailedException.class)
+    public ResponseEntity<String> handlePaymentFailedException(PaymentFailedException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    // Handles all other unexpected exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
         Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-	@ExceptionHandler(DuplicateIsbnException.class)
-	public ResponseEntity<Map<String, String>> handleDuplicateIsbn(DuplicateIsbnException ex) {
-		Map<String, String> error = new HashMap<>();
-		error.put("error", ex.getMessage());
-		return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
-	}
-
-	@ExceptionHandler(UsernameNotFoundException.class)
-	public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-	}
-
-	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-		return new ResponseEntity<>("Validation failed: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(UnauthorizedException.class)
-	public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
-	}
-
-	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<String> resourceNotFoundException(ResourceNotFoundException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-	}
-
-	@ExceptionHandler(InvalidPriceRangeException.class)
-	public ResponseEntity<String> handleInvalidPriceRange(InvalidPriceRangeException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(CategoryNotFoundException.class)
-	public ResponseEntity<String> handleCategoryNotFound(CategoryNotFoundException ex) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	}
-
-	@ExceptionHandler(InvalidSortParameterException.class)
-	public ResponseEntity<String> handleInvalidSortParameter(InvalidSortParameterException ex) {
-	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(InvalidRequestException.class)
-	public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	  @ExceptionHandler(BookNotFoundException.class)
-	    public ResponseEntity<String> handleBookNotFound(BookNotFoundException ex) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	    }
-
-	    @ExceptionHandler(InvalidQuantityException.class)
-	    public ResponseEntity<String> handleInvalidQuantity(InvalidQuantityException ex) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-	    }
-          
-	    @ExceptionHandler(CartItemNotFoundException.class)
-	    public ResponseEntity<String> handleCartItemNotFound(CartItemNotFoundException ex) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	    }
-
-	
-	// Handle all other exceptions → 500
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
-		Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
-		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-	}
-
 }

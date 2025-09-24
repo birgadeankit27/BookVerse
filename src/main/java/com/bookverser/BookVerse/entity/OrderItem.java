@@ -3,15 +3,8 @@ package com.bookverser.BookVerse.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.*;
-
 import java.math.BigDecimal;
 
-/**
- * OrderItem Entity
- * Represents an item within an order, linking to a specific book and seller.
- * - Depends on the books table (via book_id foreign key).
- * - Ensures foreign key constraints are correctly applied after books table creation.
- */
 @Entity
 @Table(name = "order_items")
 @Getter
@@ -37,7 +30,7 @@ public class OrderItem {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @Min(value = 1, message = "Quantity must be at least 1")
+    @Min(1)
     @Column(nullable = false)
     private int quantity;
 
