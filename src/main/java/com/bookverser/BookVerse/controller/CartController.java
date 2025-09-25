@@ -2,6 +2,9 @@ package com.bookverser.BookVerse.controller;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,10 +46,10 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
     
- // Remove Book from Cart
+ // --------------------------Remove Book from Cart-------------------------
     @DeleteMapping("/{bookId}")
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
-    public ResponseEntity<CartResponseDto> removeCartItem(
+    public ResponseEntity<Map<String, Object>> removeCartItem(
             Authentication authentication,
             @PathVariable Long bookId
     ) {
@@ -56,7 +59,7 @@ public class CartController {
                 .orElseThrow(() -> new UnauthorizedException("Unauthorized: User not found"));
 
         // 🔹 Call service to remove cart item
-        CartResponseDto response = cartService.removeCartItem(customer.getId(), bookId);
+        Map<String, Object> response = cartService.removeCartItem(customer.getId(), bookId);
 
         return ResponseEntity.ok(response); // ✅ 200 OK with updated cart
     }

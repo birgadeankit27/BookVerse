@@ -1,6 +1,8 @@
 package com.bookverser.BookVerse.serviceimpl;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,59 +120,50 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
     
-    //Delete Book From the cart
+    //Delete Book From the cart/Remove Cart Item
     @Autowired
     private ModelMapper modelMapper;
-	@Override
-	public CartResponseDto removeCartItem(Long customerId, Long bookId) {
-	    // 🔹 Load customer
-	    User customer = userRepository.findById(customerId)
-	            .orElseThrow(() -> new RuntimeException("Customer not found"));
+    @Override
+    public Map<String, Object> removeCartItem(Long customerId, Long bookId) {
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
-	    // 🔹 Find customer's cart
-	    Cart cart = cartRepository.findByCustomer(customer)
-	            .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer: " + customerId));
+        Cart cart = cartRepository.findByCustomer(customer)
+                .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer"));
 
-	    // 🔹 Find the CartItem by bookId
-	    CartItem cartItem = cart.getCartItems().stream()
-	            .filter(item -> item.getBook().getId().equals(bookId))
-	            .findFirst()
-	            .orElseThrow(() -> new CartItemNotFoundException("Cart item not found for book: " + bookId));
+        CartItem cartItem = cart.getCartItems().stream()
+                .filter(item -> item.getBook().getId().equals(bookId))
+                .findFirst()
+                .orElseThrow(() -> new CartItemNotFoundException(
+                        "Book with id " + bookId + " not found in cart"));
 
-	    // 🔹 Remove the item
-	    cart.getCartItems().remove(cartItem);
-	    cartItem.setCart(null); // orphanRemoval ensures deletion
+        cart.getCartItems().remove(cartItem);
 
-	    // 🔹 Recalculate total
-	    BigDecimal newTotal = cart.getCartItems().stream()
-	            .map(item -> item.getBook().getPrice()
-	                    .multiply(BigDecimal.valueOf(item.getQuantity())))
-	            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Recalculate total
+        BigDecimal newTotal = cart.getCartItems().stream()
+                .map(item -> item.getBook().getPrice()
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        cart.setTotalPrice(newTotal);
 
-	    cart.setTotalPrice(newTotal);
+        cartRepository.save(cart);
 
-	    // 🔹 Save updated cart
-	    cartRepository.save(cart);
+        // Map cart items to DTO
+        List<CartItemDto> itemsDto = cart.getCartItems().stream()
+                .map(item -> modelMapper.map(item, CartItemDto.class))
+                .toList();
 
-	    // 🔹 Map entity → DTO using ModelMapper
-	    CartResponseDto responseDto = modelMapper.map(cart, CartResponseDto.class);
+        // Build response map
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Book removed from cart successfully");
+        response.put("cartId", cart.getId());
+        response.put("customerId", customer.getId());
+        response.put("totalPrice", cart.getTotalPrice());
+        response.put("items", itemsDto);
 
-	    // 🔹 Handle nested CartItems manually (to calculate total per item)
-	    responseDto.setItems(
-	            cart.getCartItems().stream()
-	                    .map(item -> {
-	                        CartItemDto dto = modelMapper.map(item, CartItemDto.class);
-	                        BigDecimal price = item.getBook().getPrice();
-	                        dto.setPrice(price);
-	                        dto.setTotal(price.multiply(BigDecimal.valueOf(item.getQuantity())));
-	                        return dto;
-	                    })
-	                    .toList()
-	    );
+        return response;
+    }
 
-	    return responseDto;
-	}
-	
 
 	
 	
