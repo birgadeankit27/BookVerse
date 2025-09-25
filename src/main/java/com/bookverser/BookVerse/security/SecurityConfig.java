@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN") // Delete books
 
                 // Cart endpoints
-                .requestMatchers("/api/carts/**").hasRole("CUSTOMER") // Only buyers can manage cart
+                .requestMatchers("/api/carts/**").hasRole("CUSTOMER") // Only buyers can manage cart 
 
                 // Order endpoints
                 .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN") // Customers and admin can access orders

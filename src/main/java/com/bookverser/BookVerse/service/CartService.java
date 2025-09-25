@@ -10,8 +10,7 @@ public interface CartService {
      * @param request AddToCartRequest containing bookId and quantity.
      * @return Updated CartResponseDto with current cart items and total price.
      */
-    CartResponseDto addToCart(Long buyerId, AddToCartRequest request);
-
+	CartItemDto addToCart(Long buyerId, AddToCartRequest request);
     /**
      * Update the quantity of a specific book in the cart.
      * @param buyerId ID of the buyer.

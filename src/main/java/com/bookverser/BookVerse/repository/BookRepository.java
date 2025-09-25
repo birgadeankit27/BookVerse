@@ -32,13 +32,9 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     List<Book> findBySeller_Id(Long sellerId);
 
-public interface BookRepository extends JpaRepository<Book, Long>{
-	
-	
-	 boolean existsByIsbn(String isbn);
-	 List<Book> findByCategory_Name(String categoryName);
-
-
+	List<Book> findByCategory_Name(String categoryName);
 
 }
+
+
 

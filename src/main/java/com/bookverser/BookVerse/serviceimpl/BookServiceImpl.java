@@ -176,10 +176,8 @@ public class BookServiceImpl implements BookService {
 
 
     // ------------------- Other Methods (Stubs) -------------------
-    @Override
-    public Page<BookDto> getAllBooks(Pageable pageable, Long category, String author, Double minPrice, Double maxPrice) {
-        return null;
-
+    
+    
     @Override
     public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
         Page<Book> books = bookRepository.findAll(pageable); // You can later add filters
@@ -192,8 +190,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public BookDto getBookById(Long bookId) {
 
-        return null;
-
+            
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
 
@@ -223,21 +220,19 @@ public class BookServiceImpl implements BookService {
 
         if (books.isEmpty()) {
 
-            return List.of();
+            
 
             throw new ResourceNotFoundException("No books found for category: " + categoryName);
-
+           
         }
 
+        
         return books.stream()
                 .map(book -> modelMapper.map(book, BookDto.class))
                 .toList();
     }
 
 
-    
-    @Override
-    public List<BookDto> getBooksByCategory(Long categoryId) {
 
     @Override
     public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
@@ -280,31 +275,8 @@ public class BookServiceImpl implements BookService {
 
         return modelMapper.map(book, BookDto.class);
     }
-    @Override
-    public void bulkImportBooks(MultipartFile file) throws IOException {
-        // TODO implement CSV/Excel import
-    }
-
-    @Override
-    public List<BookDto> getBooksBySeller(Long sellerId) {
-        // TODO implement get by seller
-
-        return null;
-    }
-
-    @Override
-
-    public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
-
-    public BookDto featureBook(Long bookId) {
-        // TODO implement feature logic
-
-        return null;
-    }
-
-    @Override
-
-    public BookDto uploadImage(Long bookId, MultipartFile file) throws IOException {
+   
+   
 
     public List<BookDto> searchBooks(SearchBooksRequestDTO request) {
         // TODO implement advanced search
@@ -470,6 +442,7 @@ public class BookServiceImpl implements BookService {
         }
 
         return books;
+        }
 
     public List<BookDto> searchBooks(String title, String author, String isbn) {
         // TODO implement search
