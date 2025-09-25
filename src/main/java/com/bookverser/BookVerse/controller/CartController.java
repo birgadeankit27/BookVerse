@@ -43,6 +43,25 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
     
+ // Remove Book from Cart
+    @DeleteMapping("/{bookId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<CartResponseDto> removeCartItem(
+            Authentication authentication,
+            @PathVariable Long bookId
+    ) {
+        // 🔹 Get logged-in user email from JWT
+        String email = authentication.getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Unauthorized: User not found"));
+
+        // 🔹 Call service to remove cart item
+        CartResponseDto response = cartService.removeCartItem(customer.getId(), bookId);
+
+        return ResponseEntity.ok(response); // ✅ 200 OK with updated cart
+    }
+
+    
    
 
 }

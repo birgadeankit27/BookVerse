@@ -2,6 +2,8 @@ package com.bookverser.BookVerse.serviceimpl;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bookverser.BookVerse.dto.AddToCartRequest;
@@ -116,18 +118,61 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
     
-    
-    
-	@Override
-	public CartResponseDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request) {
-		return null;
-    }
-	
-
+    //Delete Book From the cart
+    @Autowired
+    private ModelMapper modelMapper;
 	@Override
 	public CartResponseDto removeCartItem(Long customerId, Long bookId) {
-		return null;
-    }
+	    // 🔹 Load customer
+	    User customer = userRepository.findById(customerId)
+	            .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+	    // 🔹 Find customer's cart
+	    Cart cart = cartRepository.findByCustomer(customer)
+	            .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer: " + customerId));
+
+	    // 🔹 Find the CartItem by bookId
+	    CartItem cartItem = cart.getCartItems().stream()
+	            .filter(item -> item.getBook().getId().equals(bookId))
+	            .findFirst()
+	            .orElseThrow(() -> new CartItemNotFoundException("Cart item not found for book: " + bookId));
+
+	    // 🔹 Remove the item
+	    cart.getCartItems().remove(cartItem);
+	    cartItem.setCart(null); // orphanRemoval ensures deletion
+
+	    // 🔹 Recalculate total
+	    BigDecimal newTotal = cart.getCartItems().stream()
+	            .map(item -> item.getBook().getPrice()
+	                    .multiply(BigDecimal.valueOf(item.getQuantity())))
+	            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+	    cart.setTotalPrice(newTotal);
+
+	    // 🔹 Save updated cart
+	    cartRepository.save(cart);
+
+	    // 🔹 Map entity → DTO using ModelMapper
+	    CartResponseDto responseDto = modelMapper.map(cart, CartResponseDto.class);
+
+	    // 🔹 Handle nested CartItems manually (to calculate total per item)
+	    responseDto.setItems(
+	            cart.getCartItems().stream()
+	                    .map(item -> {
+	                        CartItemDto dto = modelMapper.map(item, CartItemDto.class);
+	                        BigDecimal price = item.getBook().getPrice();
+	                        dto.setPrice(price);
+	                        dto.setTotal(price.multiply(BigDecimal.valueOf(item.getQuantity())));
+	                        return dto;
+	                    })
+	                    .toList()
+	    );
+
+	    return responseDto;
+	}
+	
+
+	
 	
 
 	@Override
@@ -145,6 +190,16 @@ public class CartServiceImpl implements CartService {
 	@Override
 	public Object checkoutCart(Long customerId, CheckoutRequest request) {
 	 return null;
+	}
+
+
+
+
+
+	@Override
+	public CartResponseDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	
