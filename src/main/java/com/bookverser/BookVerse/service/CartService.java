@@ -19,7 +19,7 @@ public interface CartService {
      * @param request UpdateCartRequest containing new quantity.
      * @return Updated CartResponseDto.
      */
-    CartResponseDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request);
+    CartItemDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request);
 
     /**
      * Remove a specific book from the cart.
