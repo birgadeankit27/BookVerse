@@ -5,4 +5,5 @@ import com.bookverser.BookVerse.dto.PlaceOrderRequest;
 
 public interface OrderService {
 	public OrderResponseDto placeOrder(PlaceOrderRequest request);
+	public OrderResponseDto getOrderById(Long orderId);
 }
