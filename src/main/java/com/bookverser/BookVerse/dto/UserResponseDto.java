@@ -1,5 +1,7 @@
 package com.bookverser.BookVerse.dto;
 
+import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -9,7 +11,5 @@ public class UserResponseDto {
     private String email;
     private String role;
     private String status;
-    private String city;
-    private String state;
-    private String country;
+    private List<AddressResponseDto> addresses;
 }
