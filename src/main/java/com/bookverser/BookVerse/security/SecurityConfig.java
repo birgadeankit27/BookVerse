@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/carts/**", "/api/orders/**"))
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/carts/**", "/api/orders/**","/api/payments/**","/api/addresses/**"))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll()
@@ -42,10 +42,15 @@ public class SecurityConfig {
 
                 // Cart endpoints
                 .requestMatchers("/api/carts/**").hasAnyAuthority("ROLE_CUSTOMER") // must match JWT authorities
-
+                 
+                // Payment endpoints
+                .requestMatchers("/api/payments/**").hasAnyAuthority("ROLE_CUSTOMER")
+                
                 // Order endpoints
                 .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
-
+                
+                // Address endpoints
+                .requestMatchers("/api/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
