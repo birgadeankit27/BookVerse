@@ -1,5 +1,8 @@
 package com.bookverser.BookVerse.service;
 
-public interface OrderService {
+import com.bookverser.BookVerse.dto.OrderResponseDto;
+import com.bookverser.BookVerse.dto.PlaceOrderRequest;
 
+public interface OrderService {
+	public OrderResponseDto placeOrder(PlaceOrderRequest request);
 }
