@@ -1,4 +1,6 @@
 package com.bookverser.BookVerse.service;
+import java.util.Map;
+
 import com.bookverser.BookVerse.dto.*;
 
 
@@ -27,7 +29,7 @@ public interface CartService {
      * @param bookId ID of the book to remove.
      * @return Updated CartResponseDto.
      */
-    CartResponseDto removeCartItem(Long customerId ,Long bookId);
+    Map<String, Object> removeCartItem(Long customerId ,Long bookId);
 
     /**
      * Retrieve all items in the buyer's cart.

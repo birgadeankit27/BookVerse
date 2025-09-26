@@ -2,6 +2,9 @@ package com.bookverser.BookVerse.controller;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +46,28 @@ public class CartController {
         CartResponseDto response = cartService.addToCart(customer.getId(), request);
         return ResponseEntity.ok(response);
     }
+
+ // --------------------------Remove Book from Cart-------------------------
+    @DeleteMapping("/{bookId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<Map<String, Object>> removeCartItem(
+            Authentication authentication,
+            @PathVariable Long bookId
+    ) {
+        // 🔹 Get logged-in user email from JWT
+        String email = authentication.getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Unauthorized: User not found"));
+
+        // 🔹 Call service to remove cart item
+        Map<String, Object> response = cartService.removeCartItem(customer.getId(), bookId);
+
+        return ResponseEntity.ok(response); // ✅ 200 OK with updated cart
+    }
+
     
+   
+
  // ====================  Update Cart Item Quantity ====================
     @PutMapping("/{bookId}")
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
@@ -73,6 +97,7 @@ public class CartController {
         CartResponseDto response = cartService.clearCart(customer.getId());
         return ResponseEntity.ok(response);
     }
+
 
 
 }

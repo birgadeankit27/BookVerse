@@ -1,7 +1,11 @@
 package com.bookverser.BookVerse.serviceimpl;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.bookverser.BookVerse.dto.AddToCartRequest;
@@ -116,6 +120,15 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
     
+
+    //Delete Book From the cart/Remove Cart Item
+    @Autowired
+    private ModelMapper modelMapper;
+    @Override
+    public Map<String, Object> removeCartItem(Long customerId, Long bookId) {
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
     
     
     @Override
@@ -169,10 +182,45 @@ public class CartServiceImpl implements CartService {
     }
 
 
-	@Override
-	public CartResponseDto removeCartItem(Long customerId, Long bookId) {
-		return null;
+
+        Cart cart = cartRepository.findByCustomer(customer)
+                .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer"));
+
+        CartItem cartItem = cart.getCartItems().stream()
+                .filter(item -> item.getBook().getId().equals(bookId))
+                .findFirst()
+                .orElseThrow(() -> new CartItemNotFoundException(
+                        "Book with id " + bookId + " not found in cart"));
+
+        cart.getCartItems().remove(cartItem);
+
+        // Recalculate total
+        BigDecimal newTotal = cart.getCartItems().stream()
+                .map(item -> item.getBook().getPrice()
+                        .multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        cart.setTotalPrice(newTotal);
+
+        cartRepository.save(cart);
+
+        // Map cart items to DTO
+        List<CartItemDto> itemsDto = cart.getCartItems().stream()
+                .map(item -> modelMapper.map(item, CartItemDto.class))
+                .toList();
+
+        // Build response map
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Book removed from cart successfully");
+        response.put("cartId", cart.getId());
+        response.put("customerId", customer.getId());
+        response.put("totalPrice", cart.getTotalPrice());
+        response.put("items", itemsDto);
+
+        return response;
     }
+
+
+	
 	
 
 	@Override
@@ -211,6 +259,16 @@ public class CartServiceImpl implements CartService {
 	@Override
 	public Object checkoutCart(Long customerId, CheckoutRequest request) {
 	 return null;
+	}
+
+
+
+
+
+	@Override
+	public CartResponseDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	
