@@ -10,13 +10,17 @@ import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
 import com.bookverser.BookVerse.dto.UserResponseDto;
 import com.bookverser.BookVerse.dto.UserStatusResponse;
+import com.bookverser.BookVerse.entity.Address;
 import com.bookverser.BookVerse.entity.PasswordResetToken;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
+import com.bookverser.BookVerse.repository.AddressRepository;
 import com.bookverser.BookVerse.repository.PasswordResetTokenRepository;
 import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.UserService;
+import com.bookverser.BookVerse.dto.AddressResponseDto;
+
 
 import java.io.IOException;
 
@@ -56,6 +60,7 @@ public class UserServiceImpl implements UserService {
     private final ModelMapper modelMapper;
     private final PasswordResetTokenRepository tokenRepository;
     private final JavaMailSender mailSender;
+    private final AddressRepository addressRepository; // 
 
 
     public UserServiceImpl(UserRepository userRepository,
@@ -63,71 +68,96 @@ public class UserServiceImpl implements UserService {
                            PasswordEncoder passwordEncoder,
                            ModelMapper modelMapper,
                            PasswordResetTokenRepository tokenRepository,
-                           JavaMailSender mailSender) {
+                           JavaMailSender mailSender,
+                           AddressRepository addressRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.modelMapper = modelMapper;
         this.tokenRepository = tokenRepository;
         this.mailSender = mailSender;
+        this.addressRepository = addressRepository;
     }
      
-    @Transactional
-    @Override
-    public String register(SignupDto signupDto) {
-        // Check if email already exists
-        if (userRepository.existsByEmail(signupDto.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
+    
+    	    @Transactional
+    	    @Override
+    	    public String register(SignupDto signupDto) {
+    	    	if (userRepository.existsByEmail(signupDto.getEmail())) {
+    	            throw new RuntimeException("Email already exists");
+    	        }
 
-        // Validate and fetch role
-        String requestedRole = "ROLE_" + signupDto.getRole().toUpperCase();
-        if (!Set.of("ROLE_CUSTOMER", "ROLE_SELLER").contains(requestedRole)) {
-            throw new RuntimeException("Invalid role. Only CUSTOMER or SELLER allowed.");
-        }
+    	        // Validate role
+    	        String requestedRole = "ROLE_" + signupDto.getRole().toUpperCase();
+    	        if (!Set.of("ROLE_CUSTOMER", "ROLE_SELLER").contains(requestedRole)) {
+    	            throw new RuntimeException("Invalid role. Only CUSTOMER or SELLER allowed.");
+    	        }
 
-        Role role = roleRepository.findByName(requestedRole)
-                .orElseThrow(() -> new RuntimeException(requestedRole + " role not found"));
+    	        Role role = roleRepository.findByName(requestedRole)
+    	                .orElseThrow(() -> new RuntimeException(requestedRole + " role not found"));
 
-        // Build and save the user
-        User user = User.builder()
-                .name(signupDto.getName())
-                .email(signupDto.getEmail())
-                .password(passwordEncoder.encode(signupDto.getPassword()))
-                .address(signupDto.getAddress())
-                .phone(signupDto.getPhone())
-                .city(signupDto.getCity() != null ? signupDto.getCity() : "Unknown")
-                .state(signupDto.getState() != null ? signupDto.getState() : "Unknown")
-                .country(signupDto.getCountry() != null ? signupDto.getCountry() : "Unknown")
-                .roles(new HashSet<>(Set.of(role)))
-                .isActive(true)
-                .build();
+    	        // Create user
+    	        User user = User.builder()
+    	                .name(signupDto.getName())
+    	                .email(signupDto.getEmail())
+    	                .password(passwordEncoder.encode(signupDto.getPassword()))
+    	                .phone(signupDto.getPhone())
+    	                .roles(new HashSet<>(Set.of(role)))
+    	                .isActive(true)
+    	                .build();
+    	        userRepository.save(user);
 
-        userRepository.save(user);
+    	        // Save addresses
+    	        if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
+    	            List<Address> addresses = signupDto.getAddresses().stream()
+    	                    .map(dto -> Address.builder()
+    	                            .city(dto.getCity())
+    	                            .state(dto.getState())
+    	                            .country(dto.getCountry())
+    	                            .user(user)
+    	                            .build())
+    	                    .collect(Collectors.toList());
+    	            addressRepository.saveAll(addresses);
+    	        }
+    	        return "User registered successfully";
+    	    }
 
-        return "User registered successfully";
-    }
+    	    @Override
+    	    public String registerAdmin(SignupDto signupDto) {
+    	    	  if (userRepository.existsByEmail(signupDto.getEmail())) {
+    	              throw new RuntimeException("Email already exists");
+    	          }
 
-    @Override
-    public String registerAdmin(SignupDto signupDto) {
-        if (userRepository.existsByEmail(signupDto.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
+    	          Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+    	                  .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
 
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
+    	          // Create admin user
+    	          User admin = User.builder()
+    	                  .name(signupDto.getName())
+    	                  .email(signupDto.getEmail())
+    	                  .password(passwordEncoder.encode(signupDto.getPassword()))
+    	                  .phone(signupDto.getPhone())
+    	                  .roles(new HashSet<>(Set.of(adminRole)))
+    	                  .isActive(true)
+    	                  .build();
+    	          userRepository.save(admin);
 
-        User user = User.builder()
-                .name(signupDto.getName())
-                .email(signupDto.getEmail())
-                .password(passwordEncoder.encode(signupDto.getPassword()))
-                .address(signupDto.getAddress())
-                .phone(signupDto.getPhone())
-                .roles(new HashSet<>(Set.of(adminRole)))
-                .build();
+    	          // Save addresses if provided
+    	          if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
+    	              List<Address> addresses = signupDto.getAddresses().stream()
+    	                      .map(dto -> Address.builder()
+    	                              
+    	                              .city(dto.getCity())
+    	                              .state(dto.getState())
+    	                              .country(dto.getCountry())
+    	                             
+    	                              .user(admin)
+    	                              .build())
+    	                      .collect(Collectors.toList());
+    	              addressRepository.saveAll(addresses);
+    	          }
 
-        userRepository.save(user);
-        return "Admin registered successfully";
+    	          return "Admin registered successfully";
     }
 
     
@@ -141,31 +171,31 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public UserDto getUserByEmail(String email) {
-		User user = userRepository.findByEmail(email)
-	            .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-	    return mapToDto(user);
-	}
+		  User user = userRepository.findByEmail(email)
+	                .orElseThrow(() -> new RuntimeException("User not found"));
+	        return mapToDto(user);
+	    }
 
-	// ✅ Helper method to map Entity → DTO
-	private UserDto mapToDto(User user) {
-	    // Convert role set → single role string
-	    String roles = user.getRoles().stream()
-	            .map(Role::getName)
-	            .reduce((r1, r2) -> r1 + ", " + r2)
-	            .orElse("CUSTOMER");
+	    // Map User → UserDto including addresses
+	    private UserDto mapToDto(User user) {
+	        String roles = user.getRoles().stream()
+	                .map(Role::getName)
+	                .reduce((r1, r2) -> r1 + ", " + r2)
+	                .orElse("CUSTOMER");
 
-	    UserDto dto = new UserDto();
-	    dto.setId(user.getId());
-	    dto.setName(user.getName());
-	    dto.setEmail(user.getEmail());
-	    dto.setRole(roles);
-	    dto.setAddress(user.getAddress());
-	    dto.setPhone(user.getPhone());
-	    dto.setCity(user.getCity());
-	    dto.setState(user.getState());
-	    dto.setCountry(user.getCountry());
+	        UserDto dto = new UserDto();
+	        dto.setId(user.getId());
+	        dto.setName(user.getName());
+	        dto.setEmail(user.getEmail());
+	        dto.setRole(roles);
+	        dto.setPhone(user.getPhone());
 
-	    return dto;
+	        List<AddressResponseDto> addressDtos = user.getAddresses().stream()
+	                .map(a -> new AddressResponseDto(a.getId(), a.getCity(), a.getState(), a.getCountry()))
+	                .collect(Collectors.toList());
+	        dto.setAddresses(addressDtos);
+
+	        return dto;
     }
 	
 	
@@ -195,27 +225,14 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public UserDto updateUserProfile(String email, UpdateProfileRequest request) {
 		 User user = userRepository.findByEmail(email)
-	                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+	                .orElseThrow(() -> new RuntimeException("User not found"));
 
-	        // ✅ Update allowed fields
 	        user.setName(request.getName());
 	        user.setPhone(request.getPhone());
-	        user.setAddress(request.getAddress());
-	        user.setCity(request.getCity());
-	        user.setState(request.getState());
-	        user.setCountry(request.getCountry());
-	        User updatedUser = userRepository.save(user);
+	        userRepository.save(user);
 
-	        // ✅ Use ModelMapper to map User → UserDto
-	        UserDto dto = modelMapper.map(updatedUser, UserDto.class);
-
-	        // ✅ Manually handle roles because ModelMapper may not handle Set<Role> → String directly
-	        dto.setRole(updatedUser.getRoles().stream()
-	                .findFirst()
-	                .map(role -> role.getName())
-	                .orElse("CUSTOMER"));
-
-	        return dto;
+	        // Address updates should go through AddressService
+	        return mapToDto(user);
 	}
 	
 
@@ -413,6 +430,8 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-
+    	
 	
 }
+    	
+    

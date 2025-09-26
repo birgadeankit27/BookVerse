@@ -35,20 +35,19 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	    List<Book> findByCategory_Name(String categoryName);
 
 	    // ✅ Updated minPrice and maxPrice to BigDecimal
-	    @Query("""
-	           SELECT b
-	           FROM Book b
-	           JOIN b.category c
-	           JOIN b.seller s
-	           WHERE (:category IS NULL OR c.name = :category)
-	             AND (:minPrice IS NULL OR b.price >= :minPrice)
-	             AND (:maxPrice IS NULL OR b.price <= :maxPrice)
-	             AND (:location IS NULL OR s.city = :location)
-	           """)
-	    List<Book> findAllFilter(@Param("category") String category,
-	                             @Param("minPrice") BigDecimal minPrice,
-	                             @Param("maxPrice") BigDecimal maxPrice,
-	                             @Param("location") String location);
+	    @Query("SELECT b FROM Book b " +
+	            "JOIN b.category c " +
+	            "JOIN b.seller s " +
+	            "JOIN s.addresses a " +
+	            "WHERE (:category IS NULL OR c.name = :category) " +
+	            "AND (:minPrice IS NULL OR b.price >= :minPrice) " +
+	            "AND (:maxPrice IS NULL OR b.price <= :maxPrice) " +
+	            "AND (:location IS NULL OR a.city = :location)")
+	     List<Book> findAllFilter(@Param("category") String category,
+	                              @Param("minPrice") BigDecimal minPrice,
+	                              @Param("maxPrice") BigDecimal maxPrice,
+	                              @Param("location") String location);
+	    
 	@Query("SELECT b FROM Book b ORDER BY b.createdAt DESC")
 	List<Book> findAllByLatest();
 

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.bookverser.BookVerse.dto.AddToCartRequest;
+import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.CartResponseDto;
 import com.bookverser.BookVerse.dto.CheckoutRequest;
 import com.bookverser.BookVerse.dto.UpdateCartRequest;
@@ -45,7 +46,7 @@ public class CartController {
         CartResponseDto response = cartService.addToCart(customer.getId(), request);
         return ResponseEntity.ok(response);
     }
-    
+
  // --------------------------Remove Book from Cart-------------------------
     @DeleteMapping("/{bookId}")
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER')")
@@ -66,5 +67,37 @@ public class CartController {
 
     
    
+
+ // ====================  Update Cart Item Quantity ====================
+    @PutMapping("/{bookId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
+    public ResponseEntity<CartItemDto> updateCartItem(
+            Authentication authentication,
+            @PathVariable Long bookId,
+            @Valid @RequestBody UpdateCartRequest request
+    ) {
+        String email = authentication.getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+        CartItemDto updatedItem = cartService.updateCartItem(customer.getId(), bookId, request);
+        return ResponseEntity.ok(updatedItem);
+    }
+
+ // ====================  Clear Cart ====================
+    @DeleteMapping("/clear")
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER','ROLE_ADMIN')")
+    public ResponseEntity<CartResponseDto> clearCart(
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+        CartResponseDto response = cartService.clearCart(customer.getId());
+        return ResponseEntity.ok(response);
+    }
+
+
 
 }

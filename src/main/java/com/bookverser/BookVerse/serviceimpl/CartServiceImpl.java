@@ -120,6 +120,7 @@ public class CartServiceImpl implements CartService {
                 .build();
     }
     
+
     //Delete Book From the cart/Remove Cart Item
     @Autowired
     private ModelMapper modelMapper;
@@ -127,6 +128,60 @@ public class CartServiceImpl implements CartService {
     public Map<String, Object> removeCartItem(Long customerId, Long bookId) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+    
+    
+    @Override
+    public CartItemDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request) {
+        // 1. Load customer
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+        // 2. Load cart for this customer
+        Cart cart = cartRepository.findByCustomer(customer)
+                .orElseThrow(() -> new UnauthorizedException("Cart not found for this user"));
+
+        // 3. Find the cart item
+        CartItem cartItem = cart.getCartItems().stream()
+                .filter(item -> item.getBook().getId().equals(bookId))
+                .findFirst()
+                .orElseThrow(() -> new CartItemNotFoundException("Cart item not found for bookId: " + bookId));
+
+        // 4. Validate quantity
+        Book book = cartItem.getBook();
+        int newQty = request.getQuantity();
+        if (newQty < 1 || newQty > book.getStock()) {
+            throw new InvalidQuantityException("Quantity must be between 1 and " + book.getStock());
+        }
+
+        // 5. Update quantity
+        cartItem.setQuantity(newQty);
+
+        // 6. Recalculate cart total
+        BigDecimal newTotal = cart.getCartItems().stream()
+                .map(item -> item.getBook().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        cart.setTotalPrice(newTotal);
+
+        cartRepository.save(cart);
+
+        // 7. Return updated cart item as DTO
+        BigDecimal price = book.getPrice();
+        BigDecimal total = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
+        return CartItemDto.builder()
+                .id(cartItem.getId())
+                .bookId(book.getId())
+                .author(book.getAuthor())
+                .title(book.getTitle())
+                .quantity(cartItem.getQuantity())
+                .price(price)
+                .total(total)
+                .build();
+    }
+
+
 
         Cart cart = cartRepository.findByCustomer(customer)
                 .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer"));
@@ -176,9 +231,30 @@ public class CartServiceImpl implements CartService {
 
 	@Override
 	public CartResponseDto clearCart(Long customerId) {
-		return null;
-    }
-	
+	    // 1. Load customer
+	    User customer = userRepository.findById(customerId)
+	            .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+	    // 2. Load cart
+	    Cart cart = cartRepository.findByCustomer(customer)
+	            .orElseThrow(() -> new UnauthorizedException("Cart not found for this user"));
+
+	    // 3. Clear items
+	    cart.getCartItems().clear();
+	    cart.setTotalPrice(BigDecimal.ZERO);
+
+	    // 4. Save updated cart
+	    cartRepository.save(cart);
+
+	    // 5. Return empty cart response
+	    return CartResponseDto.builder()
+	            .cartId(cart.getId())
+	            .customerId(customer.getId())
+	            .totalPrice(cart.getTotalPrice())
+	            .items(List.of()) // empty list
+	            .build();
+	}
+
 
 	@Override
 	public Object checkoutCart(Long customerId, CheckoutRequest request) {

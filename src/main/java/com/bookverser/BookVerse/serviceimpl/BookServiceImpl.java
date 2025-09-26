@@ -198,9 +198,10 @@ public class BookServiceImpl implements BookService {
             throw new IllegalArgumentException("Stock cannot be negative.");
         }
 
-        if (request.getPrice() != null && request.getPrice() <= 0) {
+        if (request.getPrice() != null && request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be positive.");
         }
+
 
         if (request.getTitle() != null) book.setTitle(request.getTitle().trim());
         if (request.getAuthor() != null) book.setAuthor(request.getAuthor().trim());
@@ -286,27 +287,9 @@ public class BookServiceImpl implements BookService {
 	                .toList();
 	    }
 
-	@Override
-	public BookDto updateBook(Long bookId, UpdateBookRequestDTO request) {
 
-		// TODO implement update logic
 
-		return null;
-	}
-
-	@Override
-	public void deleteBook(Long bookId) {
-
-	}
-
-	@Override
-	public List<BookDto> getBooksByCategory(String categoryName) {
-		List<Book> books = bookRepository.findByCategory_Name(categoryName);
-		if (books.isEmpty()) {
-			return List.of();
-		}
-		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).toList();
-	}
+	
 
 	@Override
 	public List<BookDto> getBooksByCategory(Long categoryId) {

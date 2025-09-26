@@ -1,7 +1,9 @@
 package com.bookverser.BookVerse.config;
 
+import com.bookverser.BookVerse.entity.Address;
 import com.bookverser.BookVerse.entity.Role;
 import com.bookverser.BookVerse.entity.User;
+import com.bookverser.BookVerse.repository.AddressRepository;
 import com.bookverser.BookVerse.repository.RoleRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -20,6 +22,9 @@ public class DataSeeder {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -50,17 +55,23 @@ public class DataSeeder {
                         .email("bookverse.work@gmail.com")
                         .password(passwordEncoder.encode("admin@123***"))
                         .roles(adminRoles)
-                        .city("Pune")                // default value
-                        .state("Maharashtra")        // default value
-                        .country("India")             // default value
-                        .address("Admin Address")
+                        
                         .phone("+911234567890")
                         .build();
-           
-
 
                 userRepository.save(admin);
-                System.out.println("✅ Created default admin: email='bookverse.work@gmail.com', password='admin@123***'");
+
+                // ✅ Create default address for Admin
+                Address adminAddress = Address.builder()
+                        .city("Pune")
+                        .state("Maharashtra")
+                        .country("India")
+                        .user(admin)
+                        .build();
+
+                addressRepository.save(adminAddress);
+
+                System.out.println("✅ Created default admin with address: email='bookverse.work@gmail.com', password='admin@123***'");
             }
 
             // ✅ Create default regular user
@@ -74,22 +85,28 @@ public class DataSeeder {
                 userRoles.add(sellerRole);
                 userRoles.add(customerRole);
 
-
                 User user = User.builder()
                         .name("ankit")
                         .email("ankitbirgade@gmail.com")
                         .password(passwordEncoder.encode("securePassword"))
                         .roles(userRoles)
-                        .city("Mumbai")               // default value
-                        .state("Maharashtra")         // default value
-                        .country("India")             // default value
-                        .address("User Address")
+                       
                         .phone("+919876543210")
                         .build();
-          
 
                 userRepository.save(user);
-                System.out.println("✅ Created default user: email='ankitbirgade@gmail.com', password='securePassword'");
+
+                // ✅ Create default address for User
+                Address userAddress = Address.builder()
+                        .city("Mumbai")
+                        .state("Maharashtra")
+                        .country("India")
+                        .user(user)
+                        .build();
+
+                addressRepository.save(userAddress);
+
+                System.out.println("✅ Created default user with address: email='ankitbirgade@gmail.com', password='securePassword'");
             }
         } catch (Exception e) {
             // Prevent app from failing if seeder has an error
