@@ -3,7 +3,9 @@ package com.bookverser.BookVerse.serviceimpl;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,7 @@ import com.bookverser.BookVerse.entity.OrderItem;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.BookNotFoundException;
 import com.bookverser.BookVerse.exception.InsufficientStockException;
+import com.bookverser.BookVerse.exception.OrderNotFoundException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.AddressRepository;
 import com.bookverser.BookVerse.repository.BookRepository;
@@ -44,6 +47,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private AddressRepository addressRepository;
+    
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -152,4 +158,30 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
+
+	@Override
+	public OrderResponseDto getOrderById(Long orderId) {
+		// 1️⃣ Get current authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
+        // 2️⃣ Fetch order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        // 3️⃣ Authorization: only owner or admin
+        if (!order.getCustomer().getId().equals(userDetails.getId()) && !userDetails.isAdmin()) {
+            throw new UnauthorizedException("Access denied");
+        }
+
+        // 4️⃣ Map entity to DTO
+        OrderResponseDto response = modelMapper.map(order, OrderResponseDto.class);
+        return response;
+	}
+
+	
 }
