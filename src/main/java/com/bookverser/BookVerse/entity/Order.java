@@ -49,7 +49,6 @@ public class Order {
     @JoinColumn(name = "shipping_address_id", nullable = false) // DB column allows null
     private Address shippingAddress;
 
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status = Status.PENDING;
