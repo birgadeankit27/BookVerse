@@ -27,7 +27,7 @@ public class Order {
     }
 
     public enum PaymentStatus {
-        PAID, COD, FAILED
+        PAID, COD, FAILED ,REFUNDED, MANUAL_REFUND_REQUIRED
     }
 
     @Id
