@@ -3,6 +3,7 @@ package com.bookverser.BookVerse.controller;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -13,8 +14,12 @@ import com.bookverser.BookVerse.dto.AddToCartRequest;
 import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.CartResponseDto;
 import com.bookverser.BookVerse.dto.CheckoutRequest;
+import com.bookverser.BookVerse.dto.OrderDTO;
+import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.UpdateCartRequest;
 import com.bookverser.BookVerse.entity.User;
+import com.bookverser.BookVerse.exception.EmptyCartException;
+import com.bookverser.BookVerse.exception.InsufficientStockException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.CartService;
@@ -98,6 +103,19 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
+  //------------------------- CheckOut Cart-------------------
+    
+    @PostMapping("/checkout")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<Object> checkoutCart(
+            Authentication authentication,
+            @Valid @RequestBody CheckoutRequest request) {
 
+        String email = authentication.getName();
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
 
+        Object result = cartService.checkoutCart(customer.getId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
 }
