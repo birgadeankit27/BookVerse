@@ -111,6 +111,77 @@ public class BookController {
         return ResponseEntity.ok(updatedBook); 
     }
     
+
+ // ------------------- Get Books by Seller -------------------
+    @GetMapping("/seller/{sellerId}")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public ResponseEntity<List<BookDto>> getBooksBySeller(@PathVariable Long sellerId) {
+        List<BookDto> books = bookServiceImpl.getBooksBySeller(sellerId);
+        return ResponseEntity.ok(books);
+    }
+    // ------------------- Bulk Import Books (Admin only) -------------------
+    @PostMapping("/admin/bulk-import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> bulkImportBooks(@RequestParam("file") MultipartFile file) throws java.io.IOException {
+        try {
+            bookServiceImpl.bulkImportBooks(file);
+            return ResponseEntity.ok("✅ Books imported successfully!");
+        } catch (UnauthorizedException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (DuplicateIsbnException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("File processing error: " + e.getMessage());
+        }
+    }
+
+
+
+
+    @GetMapping("/getAll")
+    public Page<BookDto> getAllBooks(@RequestParam(required = false) String category,
+                                    @RequestParam(required = false) String author,
+                                    @RequestParam(required = false) Double minPrice,
+                                    @RequestParam(required = false) Double maxPrice,
+                                    Pageable pageable) {
+        return bookServiceImpl.getAllBooks(pageable, category, author, minPrice, maxPrice);
+    }
+
+    @PostMapping("/{bookId}/uploadImage")
+    public BookDto uploadBookImage(@PathVariable Long bookId,
+                                  @RequestParam("file") MultipartFile file) throws IOException {
+        return bookServiceImpl.uploadImage(bookId, file);
+    }
+    
+    @GetMapping("/search")
+    public ResponseEntity<List<BookDto>> searchBooks(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) String isbn) {
+
+        List<BookDto> result = bookServiceImpl.searchBooks(title, author, categoryName, isbn);
+        return ResponseEntity.ok(result);
+    }
+    
+    @GetMapping("/featured")
+    public ResponseEntity<List<BookDto>> getFeaturedBooks() {
+        return ResponseEntity.ok(bookServiceImpl.getFeaturedBooks());
+    }
+
+    @PatchMapping("/{bookId}/feature")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookDto> markBookAsFeatured(
+            @PathVariable Long bookId,
+            @RequestParam boolean isFeatured) {
+        return ResponseEntity.ok(bookServiceImpl.markBookAsFeatured(bookId, isFeatured));
+    }
+
+ 
+
+=======
     
     @DeleteMapping("/{bookId}")
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
@@ -159,4 +230,5 @@ public class BookController {
 			throws IOException {
 		return bookServiceImpl.uploadImage(bookId, file);
 	}
+
 }

@@ -71,5 +71,5 @@ public class BookDto {
 	@NotNull(message = "Category ID is mandatory")
 	private Long categoryId;
 
-	private boolean isFeatured; // For Feature Book operation
+	private boolean isFeatured; 
 }
