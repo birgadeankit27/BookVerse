@@ -1,5 +1,7 @@
 package com.bookverser.BookVerse.dto;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -28,7 +30,7 @@ public class CreateBookRequestDTO {
 
     @NotNull(message = "Price is mandatory")
     @Positive(message = "Price must be positive")
-    private Double price;
+    private BigDecimal price;
 
     @NotBlank(message = "ISBN is mandatory")
     @Pattern(regexp = "^(?:ISBN(?:-1[03])?:? )?[0-9]{10,13}$", message = "Invalid ISBN format")

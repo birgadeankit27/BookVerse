@@ -1,5 +1,7 @@
 package com.bookverser.BookVerse.dto;
 
+import java.util.List;
+
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -22,11 +24,13 @@ public class UserDto {
     private String email;
 
     @NotNull
-    private String role; // BUYER / SELLER / ADMIN
+    private String role; // CUSTOMER / SELLER / ADMIN
 
     @Size(max = 255)
     private String address;
 
     @Pattern(regexp = "^\\+?[0-9]{10,15}$")
     private String phone;
+
+    private List<AddressResponseDto> addresses;
 }

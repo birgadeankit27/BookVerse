@@ -14,9 +14,10 @@ import java.math.BigDecimal;
 public class CartItemDto {
     private Long id;          // CartItem ID
     private Long bookId;
-    private String title;
     private String author;
-    private BigDecimal price;
+    private String title;
     private int quantity;
-    private BigDecimal subtotal;
+    private BigDecimal price;   // per unit (BigDecimal for money values)
+    private BigDecimal total;   // price * quantity (BigDecimal)
 }
+

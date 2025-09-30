@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.*;
@@ -17,7 +18,7 @@ public class BookDto {
 
 	private Long id;
 
-	public BookDto(Long id, String title, String author, String description, Double price, String isbn, Integer stock,
+	public BookDto(Long id, String title, String author, String description, BigDecimal price, String isbn, Integer stock,
 			String condition, String imageUrl, Long categoryId) {
 		this.id = id;
 		this.title = title;
@@ -44,7 +45,7 @@ public class BookDto {
 
 	@NotNull(message = "Price is mandatory")
 	@Positive(message = "Price must be positive")
-	private Double price;
+	private BigDecimal price;
 
 	@NotBlank(message = "ISBN is mandatory")
 	@Pattern(regexp = "^(?:ISBN(?:-1[03])?:? )?[0-9]{10,13}$", message = "Invalid ISBN format")

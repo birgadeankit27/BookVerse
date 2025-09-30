@@ -1,14 +1,28 @@
 package com.bookverser.BookVerse.controller;
 
+import com.bookverser.BookVerse.dto.ChangePasswordRequest;
+import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
 import com.bookverser.BookVerse.dto.LoginResponse;
+import com.bookverser.BookVerse.dto.ResetPasswordRequest;
 import com.bookverser.BookVerse.dto.SignupDto;
 import com.bookverser.BookVerse.dto.UpdateProfileRequest;
 import com.bookverser.BookVerse.dto.UserDto;
+import com.bookverser.BookVerse.dto.UserResponseDto;
+import com.bookverser.BookVerse.dto.UserStatusResponse;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
 import com.bookverser.BookVerse.service.UserService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
+
+import java.io.IOException;
+
+import java.util.List;
+
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +33,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/auth")
@@ -140,5 +155,103 @@ public class UserController {
             UserDto updatedUser = userService.updateUserProfile(userDetails.getUsername(), request);
             return ResponseEntity.ok(updatedUser);
         }
+        
+        // ==================== ✅ Change Password ====================
+        
+        @PutMapping("/change-password")
+        public ResponseEntity<?> changePassword(
+                @AuthenticationPrincipal UserDetails userDetails,
+                @Valid @RequestBody ChangePasswordRequest request) {
+
+            if (userDetails == null) {
+                return ResponseEntity.status(401).body("Unauthorized: Please login first");
+            }
+
+            try {
+                String message = userService.changePassword(userDetails.getUsername(), request);
+                return ResponseEntity.ok(message);
+            } catch (RuntimeException e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
+        
+        // ==================== ✅ Forgot Password (Request OTP)  ====================
+        
+        @PostMapping("/forgot-password")
+            public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+            try {
+                String response = userService.forgotPassword(request); // Generates OTP and sends email
+                return ResponseEntity.ok().body(response);
+            } catch (RuntimeException e) {
+                // 404 Not Found if email or phone is invalid
+                if (e.getMessage().contains("not found")) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(e.getMessage());
+                }
+                // Other server errors
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to send OTP: " + e.getMessage());
+            }
+        }
+        
+     // ==================== ✅ Reset Password (Request OTP)  ====================
+            @PostMapping("/reset-password")
+            public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+                try {
+                    String response = userService.resetPassword(request);
+                    return ResponseEntity.ok(response);
+                } catch (RuntimeException e) {
+                    return ResponseEntity.status(400).body(e.getMessage());
+                }
+        }
+
+         // ==================== ✅ Upload Profile Picture API  ====================
+            @PostMapping("/upload-profile-picture")
+            public ResponseEntity<?> uploadProfilePicture(
+                    @RequestParam("file") MultipartFile file,
+                    @AuthenticationPrincipal UserDetails userDetails,
+                    HttpServletRequest request) {
+                try {
+                    // ✅ Pass email (username in Spring Security) to service
+                    String fileUrl = userService.uploadProfilePicture(file, userDetails.getUsername());
+
+                    // Build full URL
+                    String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                    String imageUrl = baseUrl + fileUrl;
+
+                    return ResponseEntity.ok(new UploadResponse("Profile picture uploaded", imageUrl));
+
+                } catch (IOException e) {
+                    return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
+                }
+            }
+
+            // ✅ Record must be declared at class level
+            public record UploadResponse(String message, String imageUrl) {}
+
+
+       // ==================== ✅  List All Users API (Admin Only)  ====================
+            
+            @GetMapping("/admin/users")
+            @PreAuthorize("hasRole('ADMIN')")  // Only ADMIN can access
+            public ResponseEntity<List<UserResponseDto>> listUsers(
+                    @RequestParam(required = false) String role,
+                    @RequestParam(required = false) String status) {
+
+                List<UserResponseDto> users = userService.listUsers(role, status);
+                return ResponseEntity.ok(users);
+            }
+            
+            // ====================✅ Block/Unblock API ====================
+            @PutMapping("/admin/users/{id}/status")
+            @PreAuthorize("hasRole('ADMIN')")
+            public ResponseEntity<UserStatusResponse> updateUserStatus(
+                    @PathVariable Long id,
+                    @RequestParam boolean active) {
+                UserStatusResponse response = userService.updateUserStatus(id, active);
+                return ResponseEntity.ok(response);
+            }
+            
+            
 
 }

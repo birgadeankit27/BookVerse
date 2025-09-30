@@ -3,6 +3,8 @@ package com.bookverser.BookVerse.dto;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 /**
@@ -17,9 +19,10 @@ public class SearchBooksRequestDTO {
     private String keyword;
 
     @PositiveOrZero(message = "Minimum price cannot be negative")
-    private Double minPrice;
+    private BigDecimal minPrice;
 
     @PositiveOrZero(message = "Maximum price cannot be negative")
+
     private Double maxPrice;
     
     private String title;
@@ -27,4 +30,7 @@ public class SearchBooksRequestDTO {
     private String category;
     private String isbn;
     private String status;
+
+    private BigDecimal maxPrice;
+
 }

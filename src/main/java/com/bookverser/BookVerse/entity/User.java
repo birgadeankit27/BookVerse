@@ -52,20 +52,13 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    // Full address (optional: street, pin code)
-    @Column(length = 255)
-    private String address;
+   
 
-    // Clean location fields for filtering
-    @Column(length = 50, nullable = false)
-    private String city;
-
-    @Column(length = 50, nullable = false)
-    private String state;
-
-    @Column(length = 50, nullable = false)
-    private String country;
-
+   
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Address> addresses = new ArrayList<>();
+    
+    
     @Column(length = 20)
     private String phone;
 
@@ -85,4 +78,7 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    
+ // Field to store profile picture URL
+    private String profilePictureUrl;
 }
