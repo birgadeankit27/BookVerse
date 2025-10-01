@@ -12,9 +12,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.bookverser.BookVerse.dto.CartItemDto;
+import com.bookverser.BookVerse.dto.OrderDTO;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.PlaceOrderRequest;
 import com.bookverser.BookVerse.dto.AddressResponseDto;
+import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
 import com.bookverser.BookVerse.entity.Address;
 import com.bookverser.BookVerse.entity.Book;
 import com.bookverser.BookVerse.entity.Order;
@@ -158,7 +160,7 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
-
+    //For Customer
 	@Override
 	public OrderResponseDto getOrderById(Long orderId) {
 		// 1️⃣ Get current authenticated user
@@ -182,6 +184,32 @@ public class OrderServiceImpl implements OrderService {
         OrderResponseDto response = modelMapper.map(order, OrderResponseDto.class);
         return response;
 	}
+	
+	//Get Order by id For Admin
+	@Override
+    @Transactional
+    public AdminOrderResponseDto getOrderByAdminId(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        // Map Order → AdminOrderResponseDto
+        AdminOrderResponseDto response = modelMapper.map(order, AdminOrderResponseDto.class);
+
+        // Fill custom fields
+        response.setOrderId(order.getId());
+        response.setBuyerId(order.getCustomer().getId());
+        response.setBuyerName(order.getCustomer().getName());
+        response.setBuyerEmail(order.getCustomer().getEmail());
+        response.setTotalAmount(order.getTotalPrice().doubleValue());
+
+        // Map items manually with ModelMapper
+        response.setItems(order.getOrderItems().stream()
+                .map(item -> modelMapper.map(item, OrderDTO.class))
+                .collect(Collectors.toList()));
+
+        return response;
+    }
+
 
 	
 }

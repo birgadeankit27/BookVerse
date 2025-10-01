@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.controller;
 
+import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.PlaceOrderRequest;
 import com.bookverser.BookVerse.security.CustomUserDetails;
@@ -22,6 +23,15 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponseDto> getOrderById(@PathVariable Long orderId) {
         OrderResponseDto response = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(response);
+    }
+    /**
+     * Get Order by ID (Admin Only)
+     */
+    @GetMapping("/admin/{orderId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AdminOrderResponseDto> getOrderByIdForAdmin(@PathVariable Long orderId) {
+        AdminOrderResponseDto response = orderService.getOrderByAdminId(orderId);
         return ResponseEntity.ok(response);
     }
 
