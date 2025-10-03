@@ -209,6 +209,42 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
+	
+	//Update Order Status for Admin
+	@Override
+    public OrderDTO updateOrderStatus(Long orderId, String status) {
+        // ✅ Fetch order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        try {
+            Order.Status newStatus = Order.Status.valueOf(status.toUpperCase());
+
+            // ✅ Validate lifecycle (cannot revert from DELIVERED)
+            if (order.getStatus() == Order.Status.DELIVERED && newStatus != Order.Status.DELIVERED) {
+                throw new IllegalArgumentException("Cannot change status of a delivered order");
+            }
+
+            // ✅ Update status
+            order.setStatus(newStatus);
+            Order updatedOrder = orderRepository.save(order);
+
+            // ✅ Convert to DTO using ModelMapper
+            OrderDTO dto = modelMapper.map(updatedOrder, OrderDTO.class);
+
+            // manual fix for nested mapping
+            dto.setBuyerId(updatedOrder.getCustomer().getId());
+            if (!updatedOrder.getOrderItems().isEmpty()) {
+                dto.setSellerId(updatedOrder.getOrderItems().get(0).getSeller().getId());
+                dto.setBookId(updatedOrder.getOrderItems().get(0).getBook().getId());
+            }
+
+            return dto;
+
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Invalid status. Allowed: PENDING, SHIPPED, DELIVERED, CANCELLED");
+        }
+    }
 
 
 	
