@@ -1,11 +1,15 @@
 package com.bookverser.BookVerse.controller;
 
 import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
+import com.bookverser.BookVerse.dto.OrderDTO;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.PlaceOrderRequest;
 import com.bookverser.BookVerse.security.CustomUserDetails;
 import com.bookverser.BookVerse.service.OrderService;
 import jakarta.validation.Valid;
+
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +36,19 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminOrderResponseDto> getOrderByIdForAdmin(@PathVariable Long orderId) {
         AdminOrderResponseDto response = orderService.getOrderByAdminId(orderId);
+        return ResponseEntity.ok(response);
+    }
+    /**
+     * Update Order status (Admin Only)
+     */
+    @PatchMapping("/{orderId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderDTO> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, String> request) {
+
+        String status = request.get("status");
+        OrderDTO response = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(response);
     }
 
