@@ -1,7 +1,3 @@
-
-
-
-
 package com.bookverser.BookVerse.service;
 
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
@@ -86,7 +82,7 @@ public interface BookService {
      * @param request DTO with search parameters (keyword, minPrice, maxPrice).
      * @return List<BookDTO> of matching books.
      */
-    List<BookDto> searchBooks(SearchBooksRequestDTO request);
+    List<BookDto> searchBooks(String title, String author, String categoryName, String isbn);
 
     /**
      * Get books by category (BOOK:PUBLIC:GET-BY-CATEGORY).
@@ -148,11 +144,12 @@ public interface BookService {
      * @throws UnauthorizedException if user is not admin (403).
      * @throws ResourceNotFoundException if book not found (404).
      */
-    BookDto featureBook(Long bookId);
     
-    
-    
-    List<BookDto> searchBooks(String title, String author, String isbn);
+    BookDto markBookAsFeatured(Long bookId, boolean isFeatured);
+
+    List<BookDto> getFeaturedBooks();
+
+
 
     /**
      * Filter books by category, price range, and location

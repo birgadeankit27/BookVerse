@@ -57,4 +57,9 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+	public boolean isAdmin() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

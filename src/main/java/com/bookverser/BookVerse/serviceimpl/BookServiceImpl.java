@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import java.util.stream.Collectors;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,11 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.BulkImportBookRequestDTO;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
@@ -38,8 +37,12 @@ import com.bookverser.BookVerse.entity.Category;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.CategoryNotFoundException;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
+
+import com.bookverser.BookVerse.exception.InvalidRequestException;
+
 import com.bookverser.BookVerse.exception.InvalidPriceRangeException;
 import com.bookverser.BookVerse.exception.InvalidSortParameterException;
+
 import com.bookverser.BookVerse.exception.ResourceNotFoundException;
 
 import com.bookverser.BookVerse.exception.UnauthorizedException;
@@ -56,14 +59,32 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.transaction.Transactional;
 
 import jakarta.transaction.Transactional;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 @Service
 public class BookServiceImpl implements BookService {
 
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+    
+    private BookDto mapToDto(Book book) {
+        return modelMapper.map(book, BookDto.class);
+    }
+
 	@Autowired
 	private BookRepository bookRepository;
+
 
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -137,6 +158,12 @@ public class BookServiceImpl implements BookService {
 
 	// ------------------- Get Books By Seller -------------------
 
+    // ------------------- Other Methods (Stubs) -------------------
+    
+    @Override
+    public Page<BookDto> getAllBooks(Pageable pageable, String category, String author, Double minPrice, Double maxPrice) {
+        Page<Book> books = bookRepository.findAll(pageable); // You can later add filters
+
 	@Override
 	public List<BookDto> getBooksBySeller(Long sellerId) {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -145,6 +172,7 @@ public class BookServiceImpl implements BookService {
 		}
 
 		CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
 
 		// Check if user is the same seller OR is an admin
 		boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
@@ -155,12 +183,17 @@ public class BookServiceImpl implements BookService {
 
 		List<Book> books = bookRepository.findBySeller_Id(sellerId);
 
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + bookId));
+
 		if (books.isEmpty()) {
 			throw new ResourceNotFoundException("No books found for seller with ID: " + sellerId);
 		}
 
 		return books.stream().map(book -> modelMapper.map(book, BookDto.class)).collect(Collectors.toList());
 	}
+
 
 	@Override
 	 public Page<BookDto> getAllBooks(Pageable pageable, String category, String author,
@@ -178,6 +211,31 @@ public class BookServiceImpl implements BookService {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
 
+
+
+        // TODO implement update logic
+
+        return null;
+    }
+
+    @Override
+    public void deleteBook(Long bookId) {
+
+
+    }
+
+    @Override
+    public List<BookDto> getBooksByCategory(String categoryName) {
+        List<Book> books = bookRepository.findByCategory_Name(categoryName);
+
+        if (books.isEmpty()) {
+
+            return List.of();
+
+          
+            
+
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
@@ -192,6 +250,7 @@ public class BookServiceImpl implements BookService {
 
         if (!isOwner && !isAdmin) {
             throw new UnauthorizedException("Only book owner or admin can update this book");
+
         }
 
         if (request.getStock() != null && request.getStock() < 0) {
@@ -201,6 +260,16 @@ public class BookServiceImpl implements BookService {
         if (request.getPrice() != null && request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Price must be positive.");
         }
+
+
+    @Override
+    public BookDto updateStock(Long bookId, UpdateStockRequestDTO request) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        book.setStock(request.getStock());
+        bookRepository.save(book);
+        return new BookDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getPrice(),
+                book.getIsbn(), book.getStock(), book.getCondition(), book.getImageUrl(), book.getCategory().getId());
 
 
         if (request.getTitle() != null) book.setTitle(request.getTitle().trim());
@@ -218,6 +287,7 @@ public class BookServiceImpl implements BookService {
         dto.setCategoryId(updated.getCategory().getId());
         dto.setSellerId(updated.getSeller().getId());
         return dto;
+
     }
 
     @Override
@@ -244,6 +314,14 @@ public class BookServiceImpl implements BookService {
         
         book.setActive(false);
         bookRepository.save(book);
+
+
+        return modelMapper.map(book, BookDto.class);
+    }
+  
+    
+    @Override
+
     }
 
 
@@ -286,6 +364,7 @@ public class BookServiceImpl implements BookService {
 	                .map(book -> modelMapper.map(book, BookDto.class))
 	                .toList();
 	    }
+
 
 
 
@@ -502,6 +581,68 @@ public class BookServiceImpl implements BookService {
         }
 
         return books;
+
+    }
+
+    @Override
+    public List<BookDto> filterBooks(String category, Double minPrice, Double maxPrice, String location) {
+        // TODO implement filter
+        return null;
+    }
+
+    @Override
+    public List<BookDto> sortBooks(String sortBy) {
+        // TODO implement sorting
+        return null;
+
+    }
+    
+    @Override
+    public List<BookDto> searchBooks(String title, String author, String categoryName, String isbn) {
+
+        // ✅ Business rule: at least one param required
+        if ((title == null || title.isBlank()) &&
+            (author == null || author.isBlank()) &&
+            (categoryName == null || categoryName.isBlank()) &&
+            (isbn == null || isbn.isBlank())) {
+            throw new InvalidRequestException("At least one search parameter must be provided.");
+        }
+
+        List<Book> books = bookRepository.searchBooks(title, author, categoryName, isbn);
+
+        if (books.isEmpty()) {
+            throw new ResourceNotFoundException("No books found matching the given criteria.");
+        }
+
+        return books.stream()
+                .map(book -> modelMapper.map(book, BookDto.class))
+                .toList();
+    }
+    @Override
+    public BookDto markBookAsFeatured(Long bookId, boolean isFeatured) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
+
+        book.setFeatured(isFeatured);
+        Book updatedBook = bookRepository.save(book);
+
+        return mapToDto(updatedBook);
+    }
+
+    @Override
+    public List<BookDto> getFeaturedBooks() {
+        return bookRepository.findByFeaturedTrue()
+                .stream()
+                .map(this::mapToDto)
+                .toList();
+    }
+
+
+
+
+
+}
+
 	}
 
 	@Override
@@ -515,6 +656,7 @@ public class BookServiceImpl implements BookService {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 
 	@Override
 	public List<BookDto> searchBooks(String title, String author, String isbn) {

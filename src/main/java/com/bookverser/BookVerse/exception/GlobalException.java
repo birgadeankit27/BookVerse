@@ -1,24 +1,18 @@
 package com.bookverser.BookVerse.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalException {
-    // Resource not found → 404
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
 
-    
-    @ExceptionHandler(DuplicateIsbnException.class)
+	@ExceptionHandler(DuplicateIsbnException.class)
 	public ResponseEntity<Map<String, String>> handleDuplicateIsbn(DuplicateIsbnException ex) {
 		Map<String, String> error = new HashMap<>();
 		error.put("error", ex.getMessage());
@@ -40,66 +34,97 @@ public class GlobalException {
 		return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
 	}
 
-//	@ExceptionHandler(ResourceNotFoundException.class)
-//	public ResponseEntity<String> resourceNotFoundException(ResourceNotFoundException ex) {
-//		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-//	}
-
-	@ExceptionHandler(InvalidPriceRangeException.class)
-	public ResponseEntity<String> handleInvalidPriceRange(InvalidPriceRangeException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<String> resourceNotFoundException(ResourceNotFoundException ex) {
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
 	}
 
-	@ExceptionHandler(CategoryNotFoundException.class)
-	public ResponseEntity<String> handleCategoryNotFound(CategoryNotFoundException ex) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	}
 
-	@ExceptionHandler(InvalidSortParameterException.class)
-	public ResponseEntity<String> handleInvalidSortParameter(InvalidSortParameterException ex) {
-	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(InvalidRequestException.class)
-	public ResponseEntity<String> handleInvalidRequest(InvalidRequestException ex) {
-	    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	  @ExceptionHandler(BookNotFoundException.class)
-	    public ResponseEntity<String> handleBookNotFound(BookNotFoundException ex) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	    }
-
-	    @ExceptionHandler(InvalidQuantityException.class)
-	    public ResponseEntity<String> handleInvalidQuantity(InvalidQuantityException ex) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-	    }
-          
-	    @ExceptionHandler(CartItemNotFoundException.class)
-	    public ResponseEntity<String> handleCartItemNotFound(CartItemNotFoundException ex) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	    }
-
-	    @ExceptionHandler(OrderNotFoundException.class)
-	    public ResponseEntity<String> handleOrderNotFound(OrderNotFoundException ex) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-	    }
-
-	    @ExceptionHandler(InvalidPaymentMethodException.class)
-	    public ResponseEntity<String> handleInvalidPayment(InvalidPaymentMethodException ex) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-	    }
-
-	    @ExceptionHandler(PaymentFailedException.class)
-	    public ResponseEntity<String> handlePaymentFailed(PaymentFailedException ex) {
-	        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(ex.getMessage());
-	    }
-	
 	// Handle all other exceptions → 500
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
 		Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
 		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
+	
+	@ExceptionHandler(InvalidRequestException.class)
+	public ResponseEntity<String> invalidRequestException(InvalidRequestException ex) {
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NO_CONTENT);
+	}
+
+
+    // 1️⃣ Unauthorized access → 403
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
+    // 2️⃣ Resource / Entity not found → 404
+    @ExceptionHandler({
+        ResourceNotFoundException.class,
+        BookNotFoundException.class,
+        CartItemNotFoundException.class,
+        OrderNotFoundException.class,
+        CategoryNotFoundException.class,
+        UsernameNotFoundException.class
+    })
+    public ResponseEntity<Map<String, String>> handleNotFound(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    // 3️⃣ Validation errors (from @Valid)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            errors.put(error.getField(), error.getDefaultMessage())
+        );
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    // 4️⃣ Bad request / invalid input → 400
+    @ExceptionHandler({
+        InvalidQuantityException.class,
+        InvalidPriceRangeException.class,
+        InvalidSortParameterException.class,
+        InvalidRequestException.class,
+        InvalidPaymentMethodException.class,
+        InsufficientStockException.class,
+        DuplicateIsbnException.class,
+        InvalidAddressException.class
+    })
+    public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        HttpStatus status = (ex instanceof DuplicateIsbnException) ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<>(error, status);
+    }
+
+    // 5️⃣ Payment failures → 402
+    @ExceptionHandler(PaymentFailedException.class)
+    public ResponseEntity<Map<String, String>> handlePaymentFailed(PaymentFailedException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.PAYMENT_REQUIRED);
+    }
+
+    // 6️⃣ Illegal arguments → 400
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // 7️⃣ Generic fallback → 500
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
 }
