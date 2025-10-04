@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.serviceimpl;
 
+import com.bookverser.BookVerse.dto.BulkOrderStatusUpdateRequest;
 import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderSummaryDto;
@@ -126,6 +127,68 @@ public class OrderServiceImpl implements OrderService {
         List<OrderSummaryDto> pagedList = filtered.subList(start, end);
 
         return new PageImpl<>(pagedList, pageable, filtered.size());
+    }
+
+
+    @Override
+    public List<OrderResponseDto> bulkUpdateOrderStatus(BulkOrderStatusUpdateRequest request) {
+        List<Long> orderIds = request.getOrderIds();
+        String newStatus = request.getStatus().toUpperCase();
+
+        // ✅ Validate input
+        if (orderIds == null || orderIds.isEmpty()) {
+            throw new IllegalArgumentException("Order IDs cannot be empty");
+        }
+
+        // ✅ Validate status
+        Order.Status targetStatus;
+        try {
+            targetStatus = Order.Status.valueOf(newStatus);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid order status: " + newStatus);
+        }
+
+        // ✅ Fetch orders
+        List<Order> orders = orderRepository.findAllById(orderIds);
+        if (orders.size() != orderIds.size()) {
+            throw new RuntimeException("Some orders not found. Check the provided IDs.");
+        }
+
+        // ✅ Validate allowed status transitions (optional rule enforcement)
+        for (Order order : orders) {
+            if (order.getStatus() == Order.Status.CANCELLED) {
+                throw new RuntimeException("Cannot update cancelled orders: Order ID " + order.getId());
+            }
+            // Example: prevent reverting delivered orders
+            if (order.getStatus() == Order.Status.DELIVERED && targetStatus != Order.Status.DELIVERED) {
+                throw new RuntimeException("Delivered order cannot be changed: Order ID " + order.getId());
+            }
+        }
+
+        // ✅ Update status
+        orders.forEach(order -> order.setStatus(targetStatus));
+        orderRepository.saveAll(orders);
+
+        // ✅ Return response DTOs
+        return orders.stream().map(order -> {
+            OrderResponseDto dto = new OrderResponseDto();
+            dto.setOrderId(order.getId());
+            dto.setCustomerId(order.getCustomer().getId());
+            dto.setPaymentMethod(order.getPaymentStatus().name());
+            dto.setStatus(order.getStatus().name());
+            dto.setTotalAmount(order.getTotalPrice());
+
+            List<CartItemDto> items = order.getOrderItems().stream().map(item -> {
+                CartItemDto cartItemDto = new CartItemDto();
+                cartItemDto.setBookId(item.getBook().getId());
+                cartItemDto.setQuantity(item.getQuantity());
+                cartItemDto.setPrice(item.getUnitPrice());
+                return cartItemDto;
+            }).collect(Collectors.toList());
+
+            dto.setItems(items);
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Autowired
@@ -335,6 +398,7 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Invalid status. Allowed: PENDING, SHIPPED, DELIVERED, CANCELLED");
         }
     }
+
 
 
 
