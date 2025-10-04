@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.service;
 
+
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderSummaryDto;
 import org.springframework.data.domain.Page;
@@ -18,4 +19,16 @@ public interface OrderService {
                                        LocalDate toDate,
                                        Long customerId,
                                        Pageable pageable);
+
+import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
+import com.bookverser.BookVerse.dto.OrderDTO;
+import com.bookverser.BookVerse.dto.OrderResponseDto;
+import com.bookverser.BookVerse.dto.PlaceOrderRequest;
+
+public interface OrderService {
+	public OrderResponseDto placeOrder(PlaceOrderRequest request);
+	public OrderResponseDto getOrderById(Long orderId);
+	public  AdminOrderResponseDto getOrderByAdminId(Long orderId);
+	 OrderDTO updateOrderStatus(Long orderId, String status);
+
 }

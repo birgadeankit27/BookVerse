@@ -44,7 +44,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/carts/**").hasAnyAuthority("ROLE_CUSTOMER") // must match JWT authorities
                  
                 // Payment endpoints
-                .requestMatchers("/api/payments/**").hasAnyAuthority("ROLE_CUSTOMER")
+                .requestMatchers("/api/payments/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
+
                 
                 // Order endpoints
                 .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")

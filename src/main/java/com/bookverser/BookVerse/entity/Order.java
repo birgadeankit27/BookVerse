@@ -27,7 +27,7 @@ public class Order {
     }
 
     public enum PaymentStatus {
-        PAID, COD, FAILED
+        PAID, COD, FAILED ,REFUNDED, MANUAL_REFUND_REQUIRED
     }
 
     @Id
@@ -37,17 +37,17 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
-
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
+
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPrice;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "shipping_address_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY) // JPA allows null
+    @JoinColumn(name = "shipping_address_id", nullable = false) // DB column allows null
     private Address shippingAddress;
-
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
