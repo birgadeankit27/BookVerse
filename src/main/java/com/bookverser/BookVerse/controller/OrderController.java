@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.controller;
 
+import com.bookverser.BookVerse.dto.BulkOrderStatusUpdateRequest;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderSummaryDto;
 import com.bookverser.BookVerse.service.OrderService;
@@ -49,4 +50,12 @@ public class OrderController {
 
         return orderService.getAllOrders(status, from, to, customerId, pageable);
     }
+    
+ // =============== ADMIN: BULK UPDATE ORDER STATUS ===============
+    @PatchMapping("/admin/orders/status/bulk")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<OrderResponseDto> bulkUpdateOrderStatus(@RequestBody BulkOrderStatusUpdateRequest request) {
+        return orderService.bulkUpdateOrderStatus(request);
+    }
+
 }

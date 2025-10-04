@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.service;
 
+import com.bookverser.BookVerse.dto.BulkOrderStatusUpdateRequest;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderSummaryDto;
 import org.springframework.data.domain.Page;
@@ -18,4 +19,6 @@ public interface OrderService {
                                        LocalDate toDate,
                                        Long customerId,
                                        Pageable pageable);
+    
+    List<OrderResponseDto> bulkUpdateOrderStatus(BulkOrderStatusUpdateRequest request);
 }
