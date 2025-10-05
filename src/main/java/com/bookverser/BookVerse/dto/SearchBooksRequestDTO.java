@@ -23,7 +23,6 @@ public class SearchBooksRequestDTO {
 
     @PositiveOrZero(message = "Maximum price cannot be negative")
 
-    private Double maxPrice;
     
     private String title;
     private String author;

@@ -7,4 +7,9 @@ import lombok.Data;
 public class CheckoutRequest {
     @NotBlank(message = "Payment method is required")
     private String paymentMethod; // e.g., COD, UPI, CARD
+
+	public Long getShippingAddressId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

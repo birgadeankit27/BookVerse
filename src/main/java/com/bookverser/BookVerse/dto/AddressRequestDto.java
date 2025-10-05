@@ -9,10 +9,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddressRequestDto {
-    @NotBlank
+
+    @NotBlank(message = "City is required")
     private String city;
-    @NotBlank
+
+    @NotBlank(message = "State is required")
     private String state;
-    @NotBlank
+
+    @NotBlank(message = "Country is required")
     private String country;
 }

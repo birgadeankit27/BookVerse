@@ -19,7 +19,7 @@ import com.bookverser.BookVerse.entity.Category;
 public interface BookRepository extends JpaRepository<Book, Long> {
 
 
-    boolean existsByIsbn(String isbn);
+    
     
     
     @Query("SELECT b FROM Book b " +
@@ -33,9 +33,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
                            @Param("isbn") String isbn);
    
     
-    List<Book> findBySeller_Id(Long sellerId);
     
-    List<Book> findByCategory_Name(String categoryName);
+    
     
     List<Book> findByFeaturedTrue();
    
@@ -87,6 +86,12 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	List<Book> findAllByRating();
 
 
-	
+
+
+
+	List<Book> findByCategory_Id(Long categoryId);
+
+
+
 
 }

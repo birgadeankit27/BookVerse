@@ -183,5 +183,76 @@ public class OrderServiceImpl implements OrderService {
         return response;
 	}
 
+	@Override
+	public List<OrderResponseDto> getMyOrders(Long userId) {
+	    // 1️⃣ User अस्तित्वात आहे का ते तपासा
+	    User customer = userRepository.findById(userId)
+	            .orElseThrow(() -> new UnauthorizedException("Customer not found"));
+
+	    // 2️⃣ User चे orders fetch करा
+	    List<Order> orders = orderRepository.findByCustomerId(customer.getId());
+	    if (orders.isEmpty()) {
+	        throw new OrderNotFoundException("No orders found for this user");
+	    }
+
+	    // 3️⃣ Entity → DTO convert करा
+	    return orders.stream()
+	            .map(order -> {
+	                OrderResponseDto dto = new OrderResponseDto();
+	                dto.setOrderId(order.getId());
+	                dto.setCustomerId(order.getCustomer().getId());
+	                dto.setPaymentMethod(order.getPaymentStatus().name());
+	                dto.setStatus(order.getStatus().name());
+	                dto.setTotalAmount(order.getTotalPrice().doubleValue());
+
+	                // Items
+	                List<CartItemDto> itemDtos = order.getOrderItems().stream().map(item -> {
+	                    CartItemDto cartItemDto = new CartItemDto();
+	                    cartItemDto.setId(item.getId());
+	                    cartItemDto.setBookId(item.getBook().getId());
+	                    cartItemDto.setTitle(item.getBook().getTitle());
+	                    cartItemDto.setAuthor(item.getBook().getAuthor());
+	                    cartItemDto.setQuantity(item.getQuantity());
+	                    cartItemDto.setPrice(item.getUnitPrice());
+	                    cartItemDto.setTotal(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+	                    return cartItemDto;
+	                }).collect(Collectors.toList());
+
+	                dto.setItems(itemDtos);
+
+	                // Address
+	                Address address = order.getShippingAddress();
+	                if (address != null) {
+	                    dto.setShippingAddress(new AddressResponseDto(
+	                            address.getId(),
+	                            address.getCity(),
+	                            address.getState(),
+	                            address.getCountry()
+	                    ));
+	                }
+
+	                return dto;
+	            })
+	            .collect(Collectors.toList());
+	}
+
+	 @Transactional
+	    @Override
+	    public void deleteOrder(Long orderId) {
+	        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+	        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
+	        Order order = orderRepository.findById(orderId)
+	                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+	        // Security check: Only admin can delete
+	        if (!userDetails.isAdmin()) {
+	            throw new UnauthorizedException("Only admins can delete orders");
+	        }
+
+	        orderRepository.delete(order);
+	    }
+
+	
 	
 }

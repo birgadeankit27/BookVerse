@@ -1,8 +1,7 @@
 package com.bookverser.BookVerse.exception;
 
 
-public class InvalidRequestException extends RuntimeException 
-{
+
 
 public class InvalidRequestException extends RuntimeException {
 

@@ -81,4 +81,21 @@ public class User {
     
  // Field to store profile picture URL
     private String profilePictureUrl;
+    
+    // city added in user
+    @NotBlank(message = "city is required")
+    @Column(nullable = false , length = 100)
+    private String city;
+    
+    @NotBlank(message = "State is required")
+    @Column(nullable = false, length = 100)
+    private String state;
+
+    
+    @NotBlank(message = "Country is required")
+    @Column(nullable = false)
+    private String country;
+
+    
 }
+

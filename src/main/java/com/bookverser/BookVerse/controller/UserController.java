@@ -70,7 +70,7 @@ public class UserController {
 
     // ==================== REGISTER ADMIN ====================
     @PostMapping("/register-admin")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> registerAdmin(@Valid @RequestBody SignupDto signupDto) {
         try {
             String message = userService.registerAdmin(signupDto);
@@ -251,6 +251,20 @@ public class UserController {
                 UserStatusResponse response = userService.updateUserStatus(id, active);
                 return ResponseEntity.ok(response);
             }
+            
+         // ==================== ✅ ADMIN: DELETE ORDER ====================
+
+            @DeleteMapping("/admin/orders/{orderId}")
+            @PreAuthorize("hasRole('ADMIN')")  // ✅ Only Admin can access
+            public ResponseEntity<String> deleteOrder(@PathVariable Long orderId) {
+                try {
+                    userService.deleteOrderByAdmin(orderId);
+                    return ResponseEntity.ok("✅ Order deleted successfully!");
+                } catch (RuntimeException e) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ " + e.getMessage());
+                }
+            }
+
             
             
 

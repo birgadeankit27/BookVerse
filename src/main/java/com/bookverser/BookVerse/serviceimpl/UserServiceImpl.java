@@ -34,7 +34,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.bookverser.BookVerse.repository.OrderRepository;
+import com.bookverser.BookVerse.entity.Order;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,23 +62,27 @@ public class UserServiceImpl implements UserService {
     private final PasswordResetTokenRepository tokenRepository;
     private final JavaMailSender mailSender;
     private final AddressRepository addressRepository; // 
+    private final OrderRepository orderRepository;
 
 
     public UserServiceImpl(UserRepository userRepository,
-                           RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder,
-                           ModelMapper modelMapper,
-                           PasswordResetTokenRepository tokenRepository,
-                           JavaMailSender mailSender,
-                           AddressRepository addressRepository) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.modelMapper = modelMapper;
-        this.tokenRepository = tokenRepository;
-        this.mailSender = mailSender;
-        this.addressRepository = addressRepository;
-    }
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            ModelMapper modelMapper,
+            PasswordResetTokenRepository tokenRepository,
+            JavaMailSender mailSender,
+            AddressRepository addressRepository,
+            OrderRepository orderRepository) { // ✅ added
+this.userRepository = userRepository;
+this.roleRepository = roleRepository;
+this.passwordEncoder = passwordEncoder;
+this.modelMapper = modelMapper;
+this.tokenRepository = tokenRepository;
+this.mailSender = mailSender;
+this.addressRepository = addressRepository;
+this.orderRepository = orderRepository; // ✅ added
+}
+
      
     
     	    @Transactional
@@ -98,13 +103,19 @@ public class UserServiceImpl implements UserService {
 
     	        // Create user
     	        User user = User.builder()
-    	                .name(signupDto.getName())
-    	                .email(signupDto.getEmail())
-    	                .password(passwordEncoder.encode(signupDto.getPassword()))
-    	                .phone(signupDto.getPhone())
-    	                .roles(new HashSet<>(Set.of(role)))
-    	                .isActive(true)
-    	                .build();
+    	        	    .name(signupDto.getName())
+    	        	    .email(signupDto.getEmail())
+    	        	    .password(passwordEncoder.encode(signupDto.getPassword()))
+    	        	    .phone(signupDto.getPhone())
+    	        	    .city(signupDto.getCity())
+    	        	    .state(signupDto.getState())        // ✅ add this
+    	        	    .country(signupDto.getCountry())
+    	        	    .roles(new HashSet<>(Set.of(role)))
+    	        	    .isActive(true)
+    	        	    .build();
+
+
+
     	        userRepository.save(user);
 
     	        // Save addresses
@@ -124,41 +135,43 @@ public class UserServiceImpl implements UserService {
 
     	    @Override
     	    public String registerAdmin(SignupDto signupDto) {
-    	    	  if (userRepository.existsByEmail(signupDto.getEmail())) {
-    	              throw new RuntimeException("Email already exists");
-    	          }
+    	        if (userRepository.existsByEmail(signupDto.getEmail())) {
+    	            throw new RuntimeException("Email already exists");
+    	        }
 
-    	          Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-    	                  .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
+    	        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+    	                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
 
-    	          // Create admin user
-    	          User admin = User.builder()
-    	                  .name(signupDto.getName())
-    	                  .email(signupDto.getEmail())
-    	                  .password(passwordEncoder.encode(signupDto.getPassword()))
-    	                  .phone(signupDto.getPhone())
-    	                  .roles(new HashSet<>(Set.of(adminRole)))
-    	                  .isActive(true)
-    	                  .build();
-    	          userRepository.save(admin);
+    	        // Create admin user
+    	        User admin = User.builder()
+    	                .name(signupDto.getName())
+    	                .email(signupDto.getEmail())
+    	                .password(passwordEncoder.encode(signupDto.getPassword()))
+    	                .phone(signupDto.getPhone())
+    	                .city(signupDto.getCity())        // ✅ Added
+    	                .state(signupDto.getState())      // ✅ Added
+    	                .country(signupDto.getCountry())  // ✅ Added
+    	                .roles(new HashSet<>(Set.of(adminRole)))
+    	                .isActive(true)
+    	                .build();
 
-    	          // Save addresses if provided
-    	          if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
-    	              List<Address> addresses = signupDto.getAddresses().stream()
-    	                      .map(dto -> Address.builder()
-    	                              
-    	                              .city(dto.getCity())
-    	                              .state(dto.getState())
-    	                              .country(dto.getCountry())
-    	                             
-    	                              .user(admin)
-    	                              .build())
-    	                      .collect(Collectors.toList());
-    	              addressRepository.saveAll(addresses);
-    	          }
+    	        userRepository.save(admin);
 
-    	          return "Admin registered successfully";
-    }
+    	        // Save addresses if provided
+    	        if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
+    	            List<Address> addresses = signupDto.getAddresses().stream()
+    	                    .map(dto -> Address.builder()
+    	                            .city(dto.getCity())
+    	                            .state(dto.getState())
+    	                            .country(dto.getCountry())
+    	                            .user(admin)
+    	                            .build())
+    	                    .collect(Collectors.toList());
+    	            addressRepository.saveAll(addresses);
+    	        }
+
+    	        return "Admin registered successfully";
+    	    }
 
     
     @Override
@@ -429,6 +442,16 @@ public class UserServiceImpl implements UserService {
 
         return response;
     }
+    
+    @Override
+    @Transactional
+    public void deleteOrderByAdmin(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        orderRepository.delete(order);
+    }
+    
 
     	
 	

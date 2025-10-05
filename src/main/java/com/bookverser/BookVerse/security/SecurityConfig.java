@@ -32,7 +32,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll()
-                .requestMatchers("/auth/register-admin").hasRole("ADMIN")
+                .requestMatchers("/auth/register-admin").permitAll()
 
                 // Book endpoints
                 .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN")

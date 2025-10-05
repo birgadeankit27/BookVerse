@@ -38,4 +38,6 @@ public interface UserService {
     List<UserResponseDto> listUsers(String role, String status);
 	UserStatusResponse updateUserStatus(Long id, boolean active);
 
+	void deleteOrderByAdmin(Long orderId);
+
 }
