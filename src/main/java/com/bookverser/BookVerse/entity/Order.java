@@ -23,7 +23,7 @@ import java.util.List;
 public class Order {
 
     public enum Status {
-        PENDING, SHIPPED, DELIVERED, CANCELLED
+        PENDING, SHIPPED,CONFIRMED, DELIVERED, CANCELLED
     }
 
     public enum PaymentStatus {
