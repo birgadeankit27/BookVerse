@@ -73,8 +73,8 @@ public class Book {
     @Column(nullable = false)
     private String status = "AVAILABLE"; // default
 
-    @Column(nullable = false)
-    private boolean isFeatured = false; // default
+    @Column(name = "is_featured",nullable = false)
+    private boolean featured=false; 
 
     @Column(nullable = false)
     private boolean isActive = true;
@@ -86,4 +86,5 @@ public class Book {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    
 }
