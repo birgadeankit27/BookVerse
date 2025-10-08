@@ -27,7 +27,8 @@ public class GlobalException {
         CartItemNotFoundException.class,
         OrderNotFoundException.class,
         CategoryNotFoundException.class,
-        UsernameNotFoundException.class
+        UsernameNotFoundException.class,
+        PaymentNotFoundException.class
     })
     public ResponseEntity<Map<String, String>> handleNotFound(Exception ex) {
         Map<String, String> error = new HashMap<>();
@@ -54,7 +55,10 @@ public class GlobalException {
         InvalidPaymentMethodException.class,
         InsufficientStockException.class,
         DuplicateIsbnException.class,
-        InvalidAddressException.class
+        InvalidAddressException.class,
+        RefundNotAllowedException.class,
+        InvalidCategoryNameException.class,
+        CategoryAlreadyExistsException.class
     })
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
         Map<String, String> error = new HashMap<>();
@@ -78,6 +82,7 @@ public class GlobalException {
         error.put("error", ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+    
 
     // 7️⃣ Generic fallback → 500
     @ExceptionHandler(Exception.class)
