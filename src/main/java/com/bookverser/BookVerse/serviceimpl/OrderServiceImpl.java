@@ -14,6 +14,7 @@ import com.bookverser.BookVerse.repository.UserRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -35,6 +36,7 @@ import com.bookverser.BookVerse.entity.OrderItem;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.BookNotFoundException;
 import com.bookverser.BookVerse.exception.InsufficientStockException;
+import com.bookverser.BookVerse.exception.InvalidOrderStatusException;
 import com.bookverser.BookVerse.exception.OrderNotFoundException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.AddressRepository;
@@ -364,6 +366,7 @@ public class OrderServiceImpl implements OrderService {
     }
 	
 	//Update Order Status for Admin
+	@Transactional
 	@Override
     public OrderDTO updateOrderStatus(Long orderId, String status) {
         // ✅ Fetch order
@@ -397,6 +400,38 @@ public class OrderServiceImpl implements OrderService {
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("Invalid status. Allowed: PENDING, SHIPPED, DELIVERED, CANCELLED");
         }
+    }
+	@Override
+    public OrderDTO cancelOrder(Long orderId, Long userId, boolean isAdmin) {
+        // 1️⃣ Check if order exists
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        if (optionalOrder.isEmpty()) {
+            throw new OrderNotFoundException("Order not found with id: " + orderId);
+        }
+
+        Order order = optionalOrder.get();
+
+        // 2️⃣ Check authorization (only customer or admin can cancel)
+        if (!isAdmin && (order.getCustomer() == null || !order.getCustomer().getId().equals(userId))) {
+            throw new UnauthorizedException("You are not authorized to cancel this order.");
+        }
+
+
+
+        // 3️⃣ Validate order status
+        if (!(order.getStatus() == Order.Status.PENDING ||
+        	      order.getStatus() == Order.Status.CONFIRMED)) {
+        	    throw new InvalidOrderStatusException(
+        	        "Order cannot be cancelled as it is already " + order.getStatus());
+        	}
+
+
+        // 4️⃣ Update order status to CANCELLED
+        order.setStatus(Order.Status.CANCELLED);
+        Order updatedOrder = orderRepository.save(order);
+
+        // 5️⃣ Convert Entity → DTO using ModelMapper
+        return modelMapper.map(updatedOrder, OrderDTO.class);
     }
 
 

@@ -112,7 +112,19 @@ public class OrderController {
         OrderDTO response = orderService.updateOrderStatus(orderId, status);
         return ResponseEntity.ok(response);
     }
+    
+    /**
+     * Cancel Order (Customer and Admin )
+     */
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderDTO> cancelOrder(
+            @PathVariable Long orderId,
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "false") boolean isAdmin) {
 
+        OrderDTO updatedOrder = orderService.cancelOrder(orderId, userId, isAdmin);
+        return ResponseEntity.ok(updatedOrder);
+    }
 
 
 }
