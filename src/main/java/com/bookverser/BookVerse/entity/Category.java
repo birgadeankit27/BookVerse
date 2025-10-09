@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,15 +56,10 @@ public class Category {
     @Column(nullable = false)
     private boolean isActive = true; // ✅ Soft delete support
 
-    // Relationship with Book
-    @OneToMany(
-        mappedBy = "category",
-        cascade = CascadeType.ALL,
-        orphanRemoval = true,
-        fetch = FetchType.LAZY
-    )
+ // Do NOT serialize books to JSON → prevents infinite recursion
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Book> books = new ArrayList<>();
-
     @PrePersist
     public void prePersist() {
         this.isActive = true; // ensures category is active by default

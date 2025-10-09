@@ -28,7 +28,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/carts/**", "/api/orders/**","/api/payments/**","/api/addresses/**"))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+            		"/auth/**", 
+            		"/api/books/**", 
+            		"/api/carts/**", 
+            		"/api/orders/**",
+            		"/api/payments/**",
+            		"/api/addresses/**", 
+            		"/api/categories/**"))
+            
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll()
@@ -52,6 +60,13 @@ public class SecurityConfig {
                 
                 // Address endpoints
                 .requestMatchers("/api/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
+                
+             // 🏷️ Category Endpoints
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
+
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
