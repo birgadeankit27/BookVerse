@@ -35,11 +35,10 @@ public interface OrderService {
 	public OrderResponseDto placeOrder(PlaceOrderRequest request);
 	public OrderResponseDto getOrderById(Long orderId);
 	public  AdminOrderResponseDto getOrderByAdminId(Long orderId);
+	public OrderResponseDto requestReturn(Long orderId);
 	 OrderDTO updateOrderStatus(Long orderId, String status);
 
 	 OrderDTO cancelOrder(Long orderId, Long userId, boolean isAdmin);
-
-
 
 
 }
