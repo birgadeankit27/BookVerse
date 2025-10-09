@@ -35,5 +35,10 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{orderId}/return")
+    public ResponseEntity<OrderResponseDto> requestReturn(@PathVariable Long orderId) {
+        OrderResponseDto response = orderService.requestReturn(orderId);
+        return ResponseEntity.ok(response);
+    }
 
 }

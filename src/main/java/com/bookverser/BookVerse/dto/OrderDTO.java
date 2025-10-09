@@ -8,12 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderDTO {
-	
-	 private Long id;
-	    private Long buyerId;
-	    private Long sellerId;
-	    private Long bookId;
-	    private String status;        // PENDING, SHIPPED, DELIVERED
-	    private String paymentStatus; // PAID, COD
-
+    private Long id;
+    private Long buyerId;
+    private Long sellerId;
+    private Long bookId;
+    private String status; // PENDING, SHIPPED, DELIVERED
+    private String paymentStatus; // PAID, COD
 }
