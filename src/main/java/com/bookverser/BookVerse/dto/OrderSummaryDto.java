@@ -3,21 +3,19 @@ package com.bookverser.BookVerse.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class ReviewDTO {
-    private Long reviewId;
-    private Long bookId;
-
-    // Customer info
+@NoArgsConstructor
+public class OrderSummaryDto {
+    private Long orderId;
     private Long customerId;
-    private String customerName;
     private String customerEmail;
-
-    private int rating;
-    private String comment;
+    private String status;
+    private String paymentStatus;
+    private BigDecimal totalAmount;
     private LocalDateTime createdAt;
 }
