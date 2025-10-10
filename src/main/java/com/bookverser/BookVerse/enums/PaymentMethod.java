@@ -2,7 +2,7 @@ package com.bookverser.BookVerse.enums;
 
 public enum PaymentMethod {
     COD,
-    UPI,
     CARD,
+    UPI,
     NET_BANKING
 }

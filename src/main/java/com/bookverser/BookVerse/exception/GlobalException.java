@@ -12,47 +12,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalException {
 
-	@ExceptionHandler(DuplicateIsbnException.class)
-	public ResponseEntity<Map<String, String>> handleDuplicateIsbn(DuplicateIsbnException ex) {
-		Map<String, String> error = new HashMap<>();
-		error.put("error", ex.getMessage());
-		return new ResponseEntity<>(error, HttpStatus.CONFLICT); // 409
-	}
-
-	@ExceptionHandler(UsernameNotFoundException.class)
-	public ResponseEntity<String> handleUsernameNotFoundException(UsernameNotFoundException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-	}
-
-	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException ex) {
-		return new ResponseEntity<>("Validation failed: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
-	}
-
-	@ExceptionHandler(UnauthorizedException.class)
-	public ResponseEntity<String> handleUnauthorizedException(UnauthorizedException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.FORBIDDEN);
-	}
-
-	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<String> resourceNotFoundException(ResourceNotFoundException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
-	}
-
-
-	// Handle all other exceptions → 500
-	@ExceptionHandler(Exception.class)
-	public ResponseEntity<Map<String, String>> handleExceptions(Exception ex) {
-		Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
-		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-	}
-	
-	@ExceptionHandler(InvalidRequestException.class)
-	public ResponseEntity<String> invalidRequestException(InvalidRequestException ex) {
-		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NO_CONTENT);
-	}
-
-
     // 1️⃣ Unauthorized access → 403
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
@@ -77,7 +36,7 @@ public class GlobalException {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    // 3️⃣ Validation errors (from @Valid)
+    // 3️⃣ Validation errors (from @Valid) → 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -87,7 +46,7 @@ public class GlobalException {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // 4️⃣ Bad request / invalid input → 400
+    // 4️⃣ Bad request / invalid input → 400 or 409
     @ExceptionHandler({
         InvalidQuantityException.class,
         InvalidPriceRangeException.class,
@@ -97,6 +56,9 @@ public class GlobalException {
         InsufficientStockException.class,
         DuplicateIsbnException.class,
         InvalidAddressException.class,
+
+        InvalidReturnRequestException.class  
+
         RefundNotAllowedException.class,
         InvalidCategoryNameException.class,
         CategoryAlreadyExistsException.class
@@ -131,5 +93,4 @@ public class GlobalException {
         Map<String, String> error = Map.of("error", "Internal Server Error: " + ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
 }
