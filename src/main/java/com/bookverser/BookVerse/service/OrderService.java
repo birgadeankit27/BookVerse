@@ -9,4 +9,5 @@ public interface OrderService {
 	public OrderResponseDto getOrderById(Long orderId);
 	public  AdminOrderResponseDto getOrderByAdminId(Long orderId);
 	public OrderResponseDto requestReturn(Long orderId);
+	public byte[] generateInvoicePdf(Long orderId);
 }
