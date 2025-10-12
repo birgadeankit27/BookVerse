@@ -1,5 +1,8 @@
 package com.bookverser.BookVerse.serviceimpl;
 
+
+import java.io.ByteArrayOutputStream;
+
 import com.bookverser.BookVerse.dto.BulkOrderStatusUpdateRequest;
 import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
@@ -10,6 +13,7 @@ import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.OrderRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,6 +27,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+import com.bookverser.BookVerse.dto.*;
+import com.bookverser.BookVerse.entity.*;
+import com.bookverser.BookVerse.entity.Order.PaymentStatus;
+import com.bookverser.BookVerse.exception.*;
+import com.bookverser.BookVerse.repository.*;
 
 
 import com.bookverser.BookVerse.dto.*;
@@ -49,9 +61,22 @@ import com.bookverser.BookVerse.repository.AddressRepository;
 import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.repository.OrderRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
+
 import com.bookverser.BookVerse.security.CustomUserDetails;
 
 import com.bookverser.BookVerse.service.OrderService;
+
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -64,10 +89,53 @@ import java.util.stream.Collectors;
 import jakarta.transaction.Transactional;
 
 
+
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private BookRepository bookRepository;
+
+	@Autowired
+	private OrderRepository orderRepository;
+
+	@Autowired
+	private AddressRepository addressRepository;
+
+	@Autowired
+	private ModelMapper modelMapper;
+
+	private static final int RETURN_DAYS_LIMIT = 7;
+
+	// Constructor with simplified ModelMapper configuration
+	public OrderServiceImpl(ModelMapper modelMapper) {
+		this.modelMapper = modelMapper;
+		// Map Order to OrderResponseDto (for paymentMethod)
+		modelMapper.typeMap(Order.class, OrderResponseDto.class)
+				.addMappings(mapper -> mapper.map(
+						src -> src.getPaymentStatus() != null ? src.getPaymentStatus().name() : null,
+						OrderResponseDto::setPaymentMethod));
+		// Map OrderItem to CartItemDto (for title, author, total)
+		modelMapper.typeMap(OrderItem.class, CartItemDto.class).addMappings(mapper -> {
+			mapper.map(src -> src.getBook() != null ? src.getBook().getId() : null, CartItemDto::setBookId);
+			mapper.map(src -> src.getBook() != null ? src.getBook().getTitle() : null, CartItemDto::setTitle);
+			mapper.map(src -> src.getBook() != null ? src.getBook().getAuthor() : null, CartItemDto::setAuthor);
+			mapper.map(src -> src.getUnitPrice(), CartItemDto::setPrice);
+			mapper.map(src -> src.getUnitPrice() != null
+					? src.getUnitPrice().multiply(BigDecimal.valueOf(src.getQuantity()))
+					: null, CartItemDto::setTotal);
+		});
+		// Simplified mapping for OrderItem to OrderDTO
+		modelMapper.typeMap(OrderItem.class, OrderDTO.class).addMappings(mapper -> {
+			mapper.map(src -> src.getId(), OrderDTO::setId);
+			mapper.map(src -> src.getBook() != null ? src.getBook().getId() : null, OrderDTO::setBookId);
+			// Avoid complex mappings that might cause null issues
+		});
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
@@ -552,3 +620,97 @@ public class OrderServiceImpl implements OrderService {
     }
 }
 }
+
+	@Override
+	@Transactional(readOnly = true)
+	public byte[] generateInvoicePdf(Long orderId) {
+
+		// --- Verify admin access ---
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+			throw new UnauthorizedException("Only admins can generate invoices.");
+		}
+
+		// --- Fetch order ---
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new OrderNotFoundException("Order not found with ID: " + orderId));
+
+		// --- Extract only simple data to avoid recursion ---
+		String customerName = order.getCustomer() != null ? order.getCustomer().getName() : "N/A";
+		String customerEmail = order.getCustomer() != null ? order.getCustomer().getEmail() : "N/A";
+		String shippingAddress = order.getShippingAddress() != null
+				? (order.getShippingAddress().getCity() + order.getShippingAddress().getCountry()
+						+ order.getShippingAddress().getCountry())
+				: "N/A";
+		LocalDateTime orderDate = order.getCreatedAt();
+		BigDecimal totalPrice = order.getTotalPrice();
+		PaymentStatus paymentStatus = order.getPaymentStatus();
+
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			Document document = new Document(PageSize.A4);
+			PdfWriter.getInstance(document, outputStream);
+			document.open();
+
+			// --- Title ---
+			Font titleFont = new Font(Font.FontFamily.HELVETICA, 20, Font.BOLD);
+			Paragraph title = new Paragraph("BookVerse Invoice", titleFont);
+			title.setAlignment(Element.ALIGN_CENTER);
+			document.add(title);
+			document.add(Chunk.NEWLINE);
+
+			// --- Order info ---
+			Font infoFont = new Font(Font.FontFamily.HELVETICA, 12);
+			document.add(new Paragraph("Order ID: " + orderId, infoFont));
+			document.add(new Paragraph("Order Date: " + orderDate, infoFont));
+			document.add(new Paragraph("Customer: " + customerName, infoFont));
+			document.add(new Paragraph("Email: " + customerEmail, infoFont));
+			document.add(new Paragraph("Shipping Address: " + shippingAddress, infoFont));
+			document.add(Chunk.NEWLINE);
+
+			// --- Items table ---
+			PdfPTable table = new PdfPTable(4);
+			table.setWidthPercentage(100);
+			table.setWidths(new int[] { 4, 1, 2, 2 });
+			Font headFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD);
+			table.addCell(new PdfPCell(new Phrase("Book Title", headFont)));
+			table.addCell(new PdfPCell(new Phrase("Qty", headFont)));
+			table.addCell(new PdfPCell(new Phrase("Unit Price", headFont)));
+			table.addCell(new PdfPCell(new Phrase("Subtotal", headFont)));
+
+			List<OrderItem> items = order.getOrderItems() != null
+			        ? new ArrayList<>(order.getOrderItems())
+			        : new ArrayList<>();
+			for (OrderItem item : items) {
+				String titleTxt = item.getBook() != null ? item.getBook().getTitle() : "N/A";
+				BigDecimal price = item.getBook() != null ? item.getBook().getPrice() : BigDecimal.ZERO;
+				int qty = item.getQuantity();
+				BigDecimal subTot = price.multiply(BigDecimal.valueOf(qty));
+
+				table.addCell(titleTxt);
+				table.addCell(String.valueOf(qty));
+				table.addCell("₹" + price);
+				table.addCell("₹" + subTot);
+			}
+			document.add(table);
+			document.add(Chunk.NEWLINE);
+
+			// --- Totals & footer ---
+			Font totalFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
+			Paragraph total = new Paragraph("Total: ₹" + totalPrice, totalFont);
+			total.setAlignment(Element.ALIGN_RIGHT);
+			document.add(total);
+
+			document.add(new Paragraph("Payment Status: " + paymentStatus, infoFont));
+			document.add(Chunk.NEWLINE);
+
+			Paragraph footer = new Paragraph("Thank you for shopping with BookVerse!", infoFont);
+			footer.setAlignment(Element.ALIGN_CENTER);
+			document.add(footer);
+
+			document.close();
+			return outputStream.toByteArray();
+
+		} catch (Exception e) {
+			throw new RuntimeException("Error generating invoice PDF: " + e.getMessage(), e);
+		}
+	}

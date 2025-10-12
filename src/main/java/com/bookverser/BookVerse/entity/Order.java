@@ -24,6 +24,10 @@ public class Order {
 
     public enum Status {
 
+    	PENDING, SHIPPED, DELIVERED, CANCELLED, RETURN_REQUESTED
+
+        PENDING, SHIPPED,CONFIRMED, DELIVERED, CANCELLED
+
     }
 
     public enum PaymentStatus {

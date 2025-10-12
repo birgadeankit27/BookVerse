@@ -57,6 +57,13 @@ public class GlobalException {
         DuplicateIsbnException.class,
         InvalidAddressException.class,
 
+
+        InvalidReturnRequestException.class  
+
+        RefundNotAllowedException.class,
+        InvalidCategoryNameException.class,
+        CategoryAlreadyExistsException.class
+
     })
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
         Map<String, String> error = new HashMap<>();
