@@ -164,6 +164,13 @@ public class OrderController {
         return ResponseEntity.ok(updatedOrder);
     }
 
+
+    @PatchMapping("/{orderId}/return")
+    public ResponseEntity<OrderResponseDto> requestReturn(@PathVariable Long orderId) {
+        OrderResponseDto response = orderService.requestReturn(orderId);
+        return ResponseEntity.ok(response);
+    }
+
 	@GetMapping("/{orderId}/invoice")
 	public ResponseEntity<byte[]> generateInvoicePdf(@PathVariable Long orderId) {
 		// Generate invoice PDF
