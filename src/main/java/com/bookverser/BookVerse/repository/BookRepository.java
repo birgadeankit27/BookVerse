@@ -40,11 +40,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByFeaturedTrue();
    
 
-
-	
-
-	 boolean existsByIsbn(String isbn);
-
 	    // ✅ Updated minPrice and maxPrice to BigDecimal
 	    @Query("SELECT b FROM Book b " +
 	           "WHERE (:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -55,9 +50,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 	                           @Param("minPrice") BigDecimal minPrice,
 	                           @Param("maxPrice") BigDecimal maxPrice);
 
-	    List<Book> findBySeller_Id(Long sellerId);
-
-	    List<Book> findByCategory_Name(String categoryName);
 
 	    // ✅ Updated minPrice and maxPrice to BigDecimal
 	    @Query("SELECT b FROM Book b " +

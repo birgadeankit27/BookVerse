@@ -1,217 +1,39 @@
 package com.bookverser.BookVerse.serviceimpl;
 
-import com.bookverser.BookVerse.dto.BulkOrderStatusUpdateRequest;
-import com.bookverser.BookVerse.dto.CartItemDto;
-import com.bookverser.BookVerse.dto.OrderResponseDto;
-import com.bookverser.BookVerse.dto.OrderSummaryDto;
-import com.bookverser.BookVerse.entity.Order;
-import com.bookverser.BookVerse.entity.OrderItem;
-import com.bookverser.BookVerse.entity.User;
-import com.bookverser.BookVerse.exception.UnauthorizedException;
-import com.bookverser.BookVerse.repository.OrderRepository;
-import com.bookverser.BookVerse.repository.UserRepository;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import com.bookverser.BookVerse.dto.*;
+import com.bookverser.BookVerse.entity.*;
+import com.bookverser.BookVerse.exception.*;
+import com.bookverser.BookVerse.repository.*;
+import com.bookverser.BookVerse.security.CustomUserDetails;
+import com.bookverser.BookVerse.service.OrderService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.bookverser.BookVerse.dto.CartItemDto;
-import com.bookverser.BookVerse.dto.OrderDTO;
-import com.bookverser.BookVerse.dto.OrderResponseDto;
-import com.bookverser.BookVerse.dto.PlaceOrderRequest;
-import com.bookverser.BookVerse.dto.AddressResponseDto;
-import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
-import com.bookverser.BookVerse.entity.Address;
-import com.bookverser.BookVerse.entity.Book;
-import com.bookverser.BookVerse.entity.Order;
-import com.bookverser.BookVerse.entity.OrderItem;
-import com.bookverser.BookVerse.entity.User;
-import com.bookverser.BookVerse.exception.BookNotFoundException;
-import com.bookverser.BookVerse.exception.InsufficientStockException;
-import com.bookverser.BookVerse.exception.InvalidOrderStatusException;
-import com.bookverser.BookVerse.exception.OrderNotFoundException;
-import com.bookverser.BookVerse.exception.UnauthorizedException;
-import com.bookverser.BookVerse.repository.AddressRepository;
-import com.bookverser.BookVerse.repository.BookRepository;
-import com.bookverser.BookVerse.repository.OrderRepository;
-import com.bookverser.BookVerse.repository.UserRepository;
-import com.bookverser.BookVerse.security.CustomUserDetails;
-
-import com.bookverser.BookVerse.service.OrderService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
-import org.springframework.stereotype.Service;
-
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import jakarta.transaction.Transactional;
-
 
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-
-    // ================== CUSTOMER: GET MY ORDERS ==================
-    @Override
-    public List<OrderResponseDto> getMyOrders(String email) {
-        User customer = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
-
-        List<Order> orders = orderRepository.findAll()
-                .stream()
-                .filter(order -> order.getCustomer().getId().equals(customer.getId()))
-                .collect(Collectors.toList());
-
-        return orders.stream().map(order -> {
-            OrderResponseDto dto = new OrderResponseDto();
-            dto.setOrderId(order.getId());
-            dto.setCustomerId(order.getCustomer().getId());
-            dto.setPaymentMethod(order.getPaymentStatus().name());
-            dto.setStatus(order.getStatus().name());
-            dto.setTotalAmount(order.getTotalPrice());
-
-            List<CartItemDto> items = order.getOrderItems().stream().map(item -> {
-                CartItemDto cartItemDto = new CartItemDto();
-                cartItemDto.setBookId(item.getBook().getId());
-                cartItemDto.setQuantity(item.getQuantity());
-                cartItemDto.setPrice(item.getUnitPrice());
-                return cartItemDto;
-            }).collect(Collectors.toList());
-
-            dto.setItems(items);
-            return dto;
-        }).collect(Collectors.toList());
-    }
-
-    // ================== ADMIN: GET ALL ORDERS ==================
-    @Override
-    public Page<OrderSummaryDto> getAllOrders(String status,
-                                              LocalDate fromDate,
-                                              LocalDate toDate,
-                                              Long customerId,
-                                              Pageable pageable) {
-
-        List<Order> orders = orderRepository.findAll();
-
-        List<OrderSummaryDto> filtered = orders.stream()
-                .filter(order -> status == null || order.getStatus().name().equalsIgnoreCase(status))
-                .filter(order -> fromDate == null || !order.getCreatedAt().toLocalDate().isBefore(fromDate))
-                .filter(order -> toDate == null || !order.getCreatedAt().toLocalDate().isAfter(toDate))
-                .filter(order -> customerId == null || order.getCustomer().getId().equals(customerId))
-                .map(order -> new OrderSummaryDto(
-                        order.getId(),
-                        order.getCustomer().getId(),
-                        order.getCustomer().getEmail(),
-                        order.getStatus().name(),
-                        order.getPaymentStatus().name(),
-                        order.getTotalPrice(),
-                        order.getCreatedAt()
-                ))
-                .collect(Collectors.toList());
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filtered.size());
-        List<OrderSummaryDto> pagedList = filtered.subList(start, end);
-
-        return new PageImpl<>(pagedList, pageable, filtered.size());
-    }
-
-
-    @Override
-    public List<OrderResponseDto> bulkUpdateOrderStatus(BulkOrderStatusUpdateRequest request) {
-        List<Long> orderIds = request.getOrderIds();
-        String newStatus = request.getStatus().toUpperCase();
-
-        // ✅ Validate input
-        if (orderIds == null || orderIds.isEmpty()) {
-            throw new IllegalArgumentException("Order IDs cannot be empty");
-        }
-
-        // ✅ Validate status
-        Order.Status targetStatus;
-        try {
-            targetStatus = Order.Status.valueOf(newStatus);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid order status: " + newStatus);
-        }
-
-        // ✅ Fetch orders
-        List<Order> orders = orderRepository.findAllById(orderIds);
-        if (orders.size() != orderIds.size()) {
-            throw new RuntimeException("Some orders not found. Check the provided IDs.");
-        }
-
-        // ✅ Validate allowed status transitions (optional rule enforcement)
-        for (Order order : orders) {
-            if (order.getStatus() == Order.Status.CANCELLED) {
-                throw new RuntimeException("Cannot update cancelled orders: Order ID " + order.getId());
-            }
-            // Example: prevent reverting delivered orders
-            if (order.getStatus() == Order.Status.DELIVERED && targetStatus != Order.Status.DELIVERED) {
-                throw new RuntimeException("Delivered order cannot be changed: Order ID " + order.getId());
-            }
-        }
-
-        // ✅ Update status
-        orders.forEach(order -> order.setStatus(targetStatus));
-        orderRepository.saveAll(orders);
-
-        // ✅ Return response DTOs
-        return orders.stream().map(order -> {
-            OrderResponseDto dto = new OrderResponseDto();
-            dto.setOrderId(order.getId());
-            dto.setCustomerId(order.getCustomer().getId());
-            dto.setPaymentMethod(order.getPaymentStatus().name());
-            dto.setStatus(order.getStatus().name());
-            dto.setTotalAmount(order.getTotalPrice());
-
-            List<CartItemDto> items = order.getOrderItems().stream().map(item -> {
-                CartItemDto cartItemDto = new CartItemDto();
-                cartItemDto.setBookId(item.getBook().getId());
-                cartItemDto.setQuantity(item.getQuantity());
-                cartItemDto.setPrice(item.getUnitPrice());
-                return cartItemDto;
-            }).collect(Collectors.toList());
-
-            dto.setItems(items);
-            return dto;
-        }).collect(Collectors.toList());
-    }
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private AddressRepository addressRepository;
-    
-    @Autowired
-    private ModelMapper modelMapper;
+    private final BookRepository bookRepository;
+    private final AddressRepository addressRepository;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
     public OrderResponseDto placeOrder(PlaceOrderRequest request) {
-        // 1️⃣ Get authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
@@ -221,22 +43,22 @@ public class OrderServiceImpl implements OrderService {
         User customer = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
-        // 2️⃣ Save new shipping address
+        // Save Shipping Address
         Address shippingAddress = Address.builder()
                 .city(request.getShippingAddress().getCity())
                 .state(request.getShippingAddress().getState())
                 .country(request.getShippingAddress().getCountry())
                 .user(customer)
                 .build();
+        addressRepository.save(shippingAddress);
 
-        shippingAddress = addressRepository.save(shippingAddress);
-
-        // 3️⃣ Validate payment method
-        if (!List.of("COD", "UPI", "CARD", "NET_BANKING").contains(request.getPaymentMethod().toUpperCase())) {
+        // Validate payment method
+        String method = request.getPaymentMethod().toUpperCase();
+        if (!List.of("COD", "UPI", "CARD", "NET_BANKING").contains(method)) {
             throw new IllegalArgumentException("Invalid payment method: " + request.getPaymentMethod());
         }
 
-        // 4️⃣ Validate items & calculate total
+        // Prepare order items
         BigDecimal totalPrice = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
@@ -245,10 +67,9 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new BookNotFoundException("Book not found: " + itemReq.getBookId()));
 
             if (book.getStock() < itemReq.getQuantity()) {
-                throw new InsufficientStockException("Book " + book.getTitle() + " has insufficient stock");
+                throw new InsufficientStockException("Insufficient stock for book: " + book.getTitle());
             }
 
-            // Deduct stock
             book.setStock(book.getStock() - itemReq.getQuantity());
             bookRepository.save(book);
 
@@ -263,178 +84,189 @@ public class OrderServiceImpl implements OrderService {
             orderItems.add(orderItem);
         }
 
-        // 5️⃣ Create order
+        // Create Order
         Order order = Order.builder()
                 .customer(customer)
                 .shippingAddress(shippingAddress)
                 .totalPrice(totalPrice)
                 .status(Order.Status.PENDING)
-                .paymentStatus(
-                        request.getPaymentMethod().equals("COD") ?
-                                Order.PaymentStatus.COD : Order.PaymentStatus.PAID)
-                .orderItems(new ArrayList<>())
+                .paymentStatus(method.equals("COD") ? Order.PaymentStatus.COD : Order.PaymentStatus.PAID)
                 .build();
 
-        // Link order items
-        for (OrderItem item : orderItems) {
-            item.setOrder(order);
-        }
+        orderItems.forEach(item -> item.setOrder(order));
         order.setOrderItems(orderItems);
-
         Order savedOrder = orderRepository.save(order);
 
-        // 6️⃣ Build response DTO
-        List<CartItemDto> responseItems = new ArrayList<>();
-        for (OrderItem item : savedOrder.getOrderItems()) {
-            CartItemDto dto = new CartItemDto();
-            dto.setId(item.getId()); 
-            dto.setBookId(item.getBook().getId());
-            dto.setTitle(item.getBook().getTitle());
-            dto.setAuthor(item.getBook().getAuthor());
-            dto.setQuantity(item.getQuantity());
-            dto.setPrice(item.getUnitPrice());
-            dto.setTotal(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-            responseItems.add(dto);
-        }
+        // ================== Use ModelMapper ==================
+        OrderResponseDto responseDto = modelMapper.map(savedOrder, OrderResponseDto.class);
 
-        AddressResponseDto addressDto = new AddressResponseDto(
-                shippingAddress.getId(),
-                shippingAddress.getCity(),
-                shippingAddress.getState(),
-                shippingAddress.getCountry()
-        );
+        // Map nested fields manually if needed
+        responseDto.setCustomerId(savedOrder.getCustomer().getId());
+        responseDto.setPaymentMethod(request.getPaymentMethod());
+        responseDto.setPaymentStatus(savedOrder.getPaymentStatus().name());
+        responseDto.setItems(savedOrder.getOrderItems().stream()
+                .map(item -> modelMapper.map(item, CartItemDto.class))
+                .collect(Collectors.toList()));
+        responseDto.setShippingAddress(modelMapper.map(savedOrder.getShippingAddress(), AddressResponseDto.class));
 
-        OrderResponseDto response = new OrderResponseDto();
-        response.setOrderId(savedOrder.getId());
-        response.setCustomerId(savedOrder.getCustomer().getId());
-        response.setPaymentMethod(request.getPaymentMethod());
-        response.setStatus(savedOrder.getStatus().name());
-        response.setTotalAmount(savedOrder.getTotalPrice().doubleValue());
-        response.setItems(responseItems);
-        response.setShippingAddress(addressDto);
-
-        return response;
+        return responseDto;
     }
-    //For Customer
-	@Override
-	public OrderResponseDto getOrderById(Long orderId) {
-		// 1️⃣ Get current authenticated user
+
+    // ================== GET ORDER BY ID (CUSTOMER) ==================
+    @Override
+    public OrderResponseDto getOrderById(Long orderId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
         }
 
         CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-
-        // 2️⃣ Fetch order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
 
-        // 3️⃣ Authorization: only owner or admin
         if (!order.getCustomer().getId().equals(userDetails.getId()) && !userDetails.isAdmin()) {
             throw new UnauthorizedException("Access denied");
         }
 
-        // 4️⃣ Map entity to DTO
-        OrderResponseDto response = modelMapper.map(order, OrderResponseDto.class);
-        return response;
-	}
-	
-	//Get Order by id For Admin
-	@Override
+        return modelMapper.map(order, OrderResponseDto.class);
+    }
+
+    // ================== GET ORDER BY ID (ADMIN) ==================
+    @Override
     @Transactional
     public AdminOrderResponseDto getOrderByAdminId(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
 
-        // Map Order → AdminOrderResponseDto
         AdminOrderResponseDto response = modelMapper.map(order, AdminOrderResponseDto.class);
-
-        // Fill custom fields
         response.setOrderId(order.getId());
         response.setBuyerId(order.getCustomer().getId());
         response.setBuyerName(order.getCustomer().getName());
         response.setBuyerEmail(order.getCustomer().getEmail());
-        response.setTotalAmount(order.getTotalPrice().doubleValue());
-
-        // Map items manually with ModelMapper
+        response.setTotalAmount(order.getTotalPrice());
         response.setItems(order.getOrderItems().stream()
                 .map(item -> modelMapper.map(item, OrderDTO.class))
                 .collect(Collectors.toList()));
-
         return response;
     }
-	
-	//Update Order Status for Admin
-	@Transactional
-	@Override
+
+    // ================== UPDATE ORDER STATUS ==================
+    @Override
+    @Transactional
     public OrderDTO updateOrderStatus(Long orderId, String status) {
-        // ✅ Fetch order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
 
+        Order.Status newStatus;
         try {
-            Order.Status newStatus = Order.Status.valueOf(status.toUpperCase());
-
-            // ✅ Validate lifecycle (cannot revert from DELIVERED)
-            if (order.getStatus() == Order.Status.DELIVERED && newStatus != Order.Status.DELIVERED) {
-                throw new IllegalArgumentException("Cannot change status of a delivered order");
-            }
-
-            // ✅ Update status
-            order.setStatus(newStatus);
-            Order updatedOrder = orderRepository.save(order);
-
-            // ✅ Convert to DTO using ModelMapper
-            OrderDTO dto = modelMapper.map(updatedOrder, OrderDTO.class);
-
-            // manual fix for nested mapping
-            dto.setBuyerId(updatedOrder.getCustomer().getId());
-            if (!updatedOrder.getOrderItems().isEmpty()) {
-                dto.setSellerId(updatedOrder.getOrderItems().get(0).getSeller().getId());
-                dto.setBookId(updatedOrder.getOrderItems().get(0).getBook().getId());
-            }
-
-            return dto;
-
-        } catch (IllegalArgumentException ex) {
+            newStatus = Order.Status.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid status. Allowed: PENDING, SHIPPED, DELIVERED, CANCELLED");
         }
-    }
-	@Override
-    public OrderDTO cancelOrder(Long orderId, Long userId, boolean isAdmin) {
-        // 1️⃣ Check if order exists
-        Optional<Order> optionalOrder = orderRepository.findById(orderId);
-        if (optionalOrder.isEmpty()) {
-            throw new OrderNotFoundException("Order not found with id: " + orderId);
+
+        if (order.getStatus() == Order.Status.DELIVERED && newStatus != Order.Status.DELIVERED) {
+            throw new IllegalArgumentException("Cannot change status of a delivered order");
         }
 
-        Order order = optionalOrder.get();
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
 
-        // 2️⃣ Check authorization (only customer or admin can cancel)
-        if (!isAdmin && (order.getCustomer() == null || !order.getCustomer().getId().equals(userId))) {
+        OrderDTO dto = modelMapper.map(updatedOrder, OrderDTO.class);
+        dto.setBuyerId(updatedOrder.getCustomer().getId());
+        if (!updatedOrder.getOrderItems().isEmpty()) {
+            dto.setSellerId(updatedOrder.getOrderItems().get(0).getSeller().getId());
+            dto.setBookId(updatedOrder.getOrderItems().get(0).getBook().getId());
+        }
+        return dto;
+    }
+
+    // ================== CANCEL ORDER ==================
+    @Override
+    public OrderDTO cancelOrder(Long orderId, Long userId, boolean isAdmin) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+
+        if (!isAdmin && !Objects.equals(order.getCustomer().getId(), userId)) {
             throw new UnauthorizedException("You are not authorized to cancel this order.");
         }
 
+        if (!(order.getStatus() == Order.Status.PENDING || order.getStatus() == Order.Status.CONFIRMED)) {
+            throw new InvalidOrderStatusException("Order cannot be cancelled as it is already " + order.getStatus());
+        }
 
-
-        // 3️⃣ Validate order status
-        if (!(order.getStatus() == Order.Status.PENDING ||
-        	      order.getStatus() == Order.Status.CONFIRMED)) {
-        	    throw new InvalidOrderStatusException(
-        	        "Order cannot be cancelled as it is already " + order.getStatus());
-        	}
-
-
-        // 4️⃣ Update order status to CANCELLED
         order.setStatus(Order.Status.CANCELLED);
         Order updatedOrder = orderRepository.save(order);
-
-        // 5️⃣ Convert Entity → DTO using ModelMapper
         return modelMapper.map(updatedOrder, OrderDTO.class);
     }
 
+    // ================== GET MY ORDERS (CUSTOMER) ==================
+    @Override
+    public List<OrderResponseDto> getMyOrders(String email) {
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
+        return orderRepository.findAll().stream()
+                .filter(order -> order.getCustomer().getId().equals(customer.getId()))
+                .map(order -> modelMapper.map(order, OrderResponseDto.class))
+                .collect(Collectors.toList());
+    }
 
+    // ================== GET ALL ORDERS (ADMIN) ==================
+    @Override
+    public Page<OrderSummaryDto> getAllOrders(String status, LocalDate fromDate, LocalDate toDate,
+                                              Long customerId, Pageable pageable) {
+        List<OrderSummaryDto> filtered = orderRepository.findAll().stream()
+                .filter(order -> status == null || order.getStatus().name().equalsIgnoreCase(status))
+                .filter(order -> fromDate == null || !order.getCreatedAt().toLocalDate().isBefore(fromDate))
+                .filter(order -> toDate == null || !order.getCreatedAt().toLocalDate().isAfter(toDate))
+                .filter(order -> customerId == null || order.getCustomer().getId().equals(customerId))
+                .map(order -> new OrderSummaryDto(
+                        order.getId(),
+                        order.getCustomer().getId(),
+                        order.getCustomer().getEmail(),
+                        order.getStatus().name(),
+                        order.getPaymentStatus().name(),
+                        order.getTotalPrice(),
+                        order.getCreatedAt()))
+                .collect(Collectors.toList());
 
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        return new PageImpl<>(filtered.subList(start, end), pageable, filtered.size());
+    }
+
+    // ================== BULK UPDATE ORDER STATUS (ADMIN) ==================
+    @Override
+    @Transactional
+    public List<OrderResponseDto> bulkUpdateOrderStatus(BulkOrderStatusUpdateRequest request) {
+        if (request.getOrderIds() == null || request.getOrderIds().isEmpty()) {
+            throw new IllegalArgumentException("Order IDs cannot be empty");
+        }
+
+        Order.Status targetStatus;
+        try {
+            targetStatus = Order.Status.valueOf(request.getStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid order status: " + request.getStatus());
+        }
+
+        List<Order> orders = orderRepository.findAllById(request.getOrderIds());
+        if (orders.size() != request.getOrderIds().size()) {
+            throw new RuntimeException("Some orders not found. Check the provided IDs.");
+        }
+
+        orders.forEach(order -> {
+            if (order.getStatus() == Order.Status.CANCELLED) {
+                throw new RuntimeException("Cannot update cancelled order: " + order.getId());
+            }
+            if (order.getStatus() == Order.Status.DELIVERED && targetStatus != Order.Status.DELIVERED) {
+                throw new RuntimeException("Delivered order cannot be changed: " + order.getId());
+            }
+            order.setStatus(targetStatus);
+        });
+
+        orderRepository.saveAll(orders);
+
+        return orders.stream().map(order -> modelMapper.map(order, OrderResponseDto.class)).collect(Collectors.toList());
+    }
 }
