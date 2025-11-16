@@ -1,3 +1,5 @@
+
+
 package com.bookverser.BookVerse.security;
 
 import org.springframework.context.annotation.Bean;
@@ -28,34 +30,40 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/api/books/**", "/api/carts/**", "/api/orders/**","/api/payments/**","/api/addresses/**"))
-            .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/auth/login", "/auth/register","/auth/forgot-password","/auth/reset-password").permitAll()
-                .requestMatchers("/auth/register-admin").hasRole("ADMIN")
+        .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/auth/**",
+                                "/api/books/**",
+                                "/api/carts/**",
+                                "/api/orders/**",
+                                "/api/payments/**",
+                                "/api/addresses/**"
+                        )
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/auth/login",
+                                "/auth/register",
+                                "/auth/forgot-password",
+                                "/auth/reset-password"
+                        ).permitAll()
 
-                // Book endpoints
-                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
+                        .requestMatchers("/auth/register-admin").hasRole("ADMIN")
 
-                // Cart endpoints
-                .requestMatchers("/api/carts/**").hasAnyAuthority("ROLE_CUSTOMER") // must match JWT authorities
-                 
-                // Payment endpoints
-                .requestMatchers("/api/payments/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/books/**").hasAnyRole("CUSTOMER", "SELLER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("SELLER", "ADMIN")
 
-                
-                // Order endpoints
-                .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
-                
-                // Address endpoints
-                .requestMatchers("/api/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers("/api/carts/**").hasAuthority("ROLE_CUSTOMER")
+                        .requestMatchers("/api/payments/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_ADMIN")
+                        .requestMatchers("/api/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers("/api/addresses/**").hasAnyRole("CUSTOMER", "ADMIN")
+
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -70,3 +78,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+

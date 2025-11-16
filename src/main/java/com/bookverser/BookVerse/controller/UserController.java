@@ -1,5 +1,4 @@
 package com.bookverser.BookVerse.controller;
-
 import com.bookverser.BookVerse.dto.ChangePasswordRequest;
 import com.bookverser.BookVerse.dto.ForgotPasswordRequest;
 import com.bookverser.BookVerse.dto.LoginRequest;
@@ -13,16 +12,18 @@ import com.bookverser.BookVerse.dto.UserStatusResponse;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.security.JwtUtil;
 import com.bookverser.BookVerse.service.UserService;
-
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
-
-
 import java.io.IOException;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +43,7 @@ public class UserController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     public UserController(UserService userService,
                           AuthenticationManager authenticationManager,
@@ -54,20 +56,13 @@ public class UserController {
     // ==================== REGISTER ====================
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody SignupDto signupDto) {
-        try {
-            String message = userService.register(signupDto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(message);
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("Email already exists")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-            } else if (e.getMessage().contains("Invalid role")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed: " + e.getMessage());
-            }
-        }
-    }
 
+         String message = userService.register(signupDto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(Map.of("message", message));
+    }
     // ==================== REGISTER ADMIN ====================
     @PostMapping("/register-admin")
     @PreAuthorize("hasRole('ADMIN')")

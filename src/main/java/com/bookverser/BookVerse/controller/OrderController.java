@@ -1,6 +1,4 @@
 package com.bookverser.BookVerse.controller;
-
-
 import com.bookverser.BookVerse.dto.OrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderSummaryDto;
 import com.bookverser.BookVerse.service.OrderService;
@@ -12,35 +10,28 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDate;
 import java.util.List;
-
 import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
 import com.bookverser.BookVerse.dto.OrderDTO;
-import com.bookverser.BookVerse.dto.OrderResponseDto;
-import com.bookverser.BookVerse.dto.PlaceOrderRequest;
-import com.bookverser.BookVerse.security.CustomUserDetails;
-import com.bookverser.BookVerse.service.OrderService;
-import jakarta.validation.Valid;
-
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+
 
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = "*")
+
 @RequiredArgsConstructor
 public class OrderController {
 
 
-    private final OrderService orderService;
+    
+    @Autowired
+    private OrderService orderService;
+
 
     // =============== CUSTOMER: GET MY ORDERS ===============
     @GetMapping("/my")
@@ -69,9 +60,7 @@ public class OrderController {
 
         return orderService.getAllOrders(status, from, to, customerId, pageable);
     }
-=======
-    @Autowired
-    private OrderService orderService;
+
 
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponseDto> getOrderById(@PathVariable Long orderId) {

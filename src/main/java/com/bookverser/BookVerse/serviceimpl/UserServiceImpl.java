@@ -80,85 +80,66 @@ public class UserServiceImpl implements UserService {
     }
      
     
-    	    @Transactional
-    	    @Override
-    	    public String register(SignupDto signupDto) {
-    	    	if (userRepository.existsByEmail(signupDto.getEmail())) {
-    	            throw new RuntimeException("Email already exists");
-    	        }
+    @Transactional
+    @Override
+    public String register(SignupDto signupDto) {
 
-    	        // Validate role
-    	        String requestedRole = "ROLE_" + signupDto.getRole().toUpperCase();
-    	        if (!Set.of("ROLE_CUSTOMER", "ROLE_SELLER").contains(requestedRole)) {
-    	            throw new RuntimeException("Invalid role. Only CUSTOMER or SELLER allowed.");
-    	        }
+        // Check duplicate email
+        if (userRepository.existsByEmail(signupDto.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
 
-    	        Role role = roleRepository.findByName(requestedRole)
-    	                .orElseThrow(() -> new RuntimeException(requestedRole + " role not found"));
+        // Validate role (only CUSTOMER or SELLER allowed)
+        String requestedRole = "ROLE_" + signupDto.getRole().toUpperCase();
+        if (!Set.of("ROLE_CUSTOMER", "ROLE_SELLER").contains(requestedRole)) {
+            throw new RuntimeException("Invalid role. Only CUSTOMER or SELLER allowed.");
+        }
 
-    	        // Create user
-    	        User user = User.builder()
-    	                .name(signupDto.getName())
-    	                .email(signupDto.getEmail())
-    	                .password(passwordEncoder.encode(signupDto.getPassword()))
-    	                .phone(signupDto.getPhone())
-    	                .roles(new HashSet<>(Set.of(role)))
-    	                .isActive(true)
-    	                .build();
-    	        userRepository.save(user);
+        Role role = roleRepository.findByName(requestedRole)
+                .orElseThrow(() -> new RuntimeException(requestedRole + " role not found"));
 
-    	        // Save addresses
-    	        if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
-    	            List<Address> addresses = signupDto.getAddresses().stream()
-    	                    .map(dto -> Address.builder()
-    	                            .city(dto.getCity())
-    	                            .state(dto.getState())
-    	                            .country(dto.getCountry())
-    	                            .user(user)
-    	                            .build())
-    	                    .collect(Collectors.toList());
-    	            addressRepository.saveAll(addresses);
-    	        }
-    	        return "User registered successfully";
-    	    }
+        // Create user
+        User user = User.builder()
+                .name(signupDto.getName())
+                .email(signupDto.getEmail())
+                .password(passwordEncoder.encode(signupDto.getPassword()))
+                .phone(signupDto.getPhone())
+                .roles(new HashSet<>(Set.of(role)))
+                .isActive(true)
+                .build();
 
-    	    @Override
-    	    public String registerAdmin(SignupDto signupDto) {
-    	    	  if (userRepository.existsByEmail(signupDto.getEmail())) {
-    	              throw new RuntimeException("Email already exists");
-    	          }
+        userRepository.save(user);
 
-    	          Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-    	                  .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
-
-    	          // Create admin user
-    	          User admin = User.builder()
-    	                  .name(signupDto.getName())
-    	                  .email(signupDto.getEmail())
-    	                  .password(passwordEncoder.encode(signupDto.getPassword()))
-    	                  .phone(signupDto.getPhone())
-    	                  .roles(new HashSet<>(Set.of(adminRole)))
-    	                  .isActive(true)
-    	                  .build();
-    	          userRepository.save(admin);
-
-    	          // Save addresses if provided
-    	          if (signupDto.getAddresses() != null && !signupDto.getAddresses().isEmpty()) {
-    	              List<Address> addresses = signupDto.getAddresses().stream()
-    	                      .map(dto -> Address.builder()
-    	                              
-    	                              .city(dto.getCity())
-    	                              .state(dto.getState())
-    	                              .country(dto.getCountry())
-    	                             
-    	                              .user(admin)
-    	                              .build())
-    	                      .collect(Collectors.toList());
-    	              addressRepository.saveAll(addresses);
-    	          }
-
-    	          return "Admin registered successfully";
+        return "User registered successfully";
     }
+
+    @Override
+    public String registerAdmin(SignupDto signupDto) {
+
+        // Check duplicate email
+        if (userRepository.existsByEmail(signupDto.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Fetch ADMIN role
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN role not found"));
+
+        // Create admin user
+        User admin = User.builder()
+                .name(signupDto.getName())
+                .email(signupDto.getEmail())
+                .password(passwordEncoder.encode(signupDto.getPassword()))
+                .phone(signupDto.getPhone())
+                .roles(new HashSet<>(Set.of(adminRole)))
+                .isActive(true)
+                .build();
+
+        userRepository.save(admin);
+
+        return "Admin registered successfully";
+    }
+
 
     
     @Override

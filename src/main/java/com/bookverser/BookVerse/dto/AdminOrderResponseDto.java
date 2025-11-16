@@ -1,5 +1,6 @@
 package com.bookverser.BookVerse.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -16,7 +17,7 @@ public class AdminOrderResponseDto {
     private String buyerEmail;
     private String status;
     private String paymentStatus;
-    private double totalAmount;
+    private BigDecimal totalAmount;
     private List<OrderDTO> items;
     private AddressResponseDto shippingAddress;
 }

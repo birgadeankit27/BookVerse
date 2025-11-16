@@ -28,11 +28,9 @@ public class SignupDto {
 
     private String role = "CUSTOMER"; // Default role
 
-   
-
-    @Size(max = 14, message = "Phone number must not exceed 14 digits")
+   @Size(max = 14, message = "Phone number must not exceed 14 digits")
     private String phone;
 
     
-    private List<AddressRequestDto> addresses;
+   
 }

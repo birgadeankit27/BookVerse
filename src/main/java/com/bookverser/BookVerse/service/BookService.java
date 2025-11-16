@@ -5,7 +5,6 @@ import com.bookverser.BookVerse.dto.UpdateBookRequestDTO;
 import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
 import com.bookverser.BookVerse.dto.BookDto;
 
-import com.bookverser.BookVerse.dto.SearchBooksRequestDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -161,7 +160,7 @@ public interface BookService {
      */
     List<BookDto> sortBooks(String sortBy);
 
-	List<BookDto> getBooksByCategory(Long categoryId);
+
     
     
  

@@ -1,32 +1,12 @@
 package com.bookverser.BookVerse.serviceimpl;
 
-import com.bookverser.BookVerse.dto.CartItemDto;
-import com.bookverser.BookVerse.dto.OrderResponseDto;
-import com.bookverser.BookVerse.dto.OrderSummaryDto;
-import com.bookverser.BookVerse.entity.Order;
-import com.bookverser.BookVerse.entity.OrderItem;
-import com.bookverser.BookVerse.entity.User;
-import com.bookverser.BookVerse.exception.UnauthorizedException;
-import com.bookverser.BookVerse.repository.OrderRepository;
-import com.bookverser.BookVerse.repository.UserRepository;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-
+import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
+import com.bookverser.BookVerse.dto.AddressResponseDto;
 import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.OrderDTO;
 import com.bookverser.BookVerse.dto.OrderResponseDto;
+import com.bookverser.BookVerse.dto.OrderSummaryDto;
 import com.bookverser.BookVerse.dto.PlaceOrderRequest;
-import com.bookverser.BookVerse.dto.AddressResponseDto;
-import com.bookverser.BookVerse.dto.AdminOrderResponseDto;
 import com.bookverser.BookVerse.entity.Address;
 import com.bookverser.BookVerse.entity.Book;
 import com.bookverser.BookVerse.entity.Order;
@@ -41,27 +21,42 @@ import com.bookverser.BookVerse.repository.BookRepository;
 import com.bookverser.BookVerse.repository.OrderRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.security.CustomUserDetails;
-
 import com.bookverser.BookVerse.service.OrderService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 
-
 @Service
-@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    @Autowired
+    private OrderRepository orderRepository;
 
-    private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     // ================== CUSTOMER: GET MY ORDERS ==================
     @Override
@@ -127,21 +122,6 @@ public class OrderServiceImpl implements OrderService {
 
         return new PageImpl<>(pagedList, pageable, filtered.size());
     }
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Autowired
-    private AddressRepository addressRepository;
-    
-    @Autowired
-    private ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -222,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
         List<CartItemDto> responseItems = new ArrayList<>();
         for (OrderItem item : savedOrder.getOrderItems()) {
             CartItemDto dto = new CartItemDto();
-            dto.setId(item.getId()); 
+            dto.setId(item.getId());
             dto.setBookId(item.getBook().getId());
             dto.setTitle(item.getBook().getTitle());
             dto.setAuthor(item.getBook().getAuthor());
@@ -244,16 +224,17 @@ public class OrderServiceImpl implements OrderService {
         response.setCustomerId(savedOrder.getCustomer().getId());
         response.setPaymentMethod(request.getPaymentMethod());
         response.setStatus(savedOrder.getStatus().name());
-        response.setTotalAmount(savedOrder.getTotalPrice().doubleValue());
+        response.setTotalAmount(savedOrder.getTotalPrice());
         response.setItems(responseItems);
         response.setShippingAddress(addressDto);
 
         return response;
     }
+
     //For Customer
-	@Override
-	public OrderResponseDto getOrderById(Long orderId) {
-		// 1️⃣ Get current authenticated user
+    @Override
+    public OrderResponseDto getOrderById(Long orderId) {
+        // 1️⃣ Get current authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new UnauthorizedException("User not authenticated");
@@ -273,10 +254,10 @@ public class OrderServiceImpl implements OrderService {
         // 4️⃣ Map entity to DTO
         OrderResponseDto response = modelMapper.map(order, OrderResponseDto.class);
         return response;
-	}
-	
-	//Get Order by id For Admin
-	@Override
+    }
+
+    //Get Order by id For Admin
+    @Override
     @Transactional
     public AdminOrderResponseDto getOrderByAdminId(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -290,7 +271,7 @@ public class OrderServiceImpl implements OrderService {
         response.setBuyerId(order.getCustomer().getId());
         response.setBuyerName(order.getCustomer().getName());
         response.setBuyerEmail(order.getCustomer().getEmail());
-        response.setTotalAmount(order.getTotalPrice().doubleValue());
+        response.setTotalAmount(order.getTotalPrice());
 
         // Map items manually with ModelMapper
         response.setItems(order.getOrderItems().stream()
@@ -299,9 +280,9 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
-	
-	//Update Order Status for Admin
-	@Override
+
+    //Update Order Status for Admin
+    @Override
     public OrderDTO updateOrderStatus(Long orderId, String status) {
         // ✅ Fetch order
         Order order = orderRepository.findById(orderId)
@@ -335,7 +316,4 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Invalid status. Allowed: PENDING, SHIPPED, DELIVERED, CANCELLED");
         }
     }
-
-
-
 }

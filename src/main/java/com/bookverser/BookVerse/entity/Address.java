@@ -25,7 +25,7 @@ public class Address {
     private String state;
 
     @NotBlank
-    @Column(length = 100, nullable = false)
+    @Column(length = 100, nullable = true)
     private String country;
 
     @ManyToOne(fetch = FetchType.LAZY)

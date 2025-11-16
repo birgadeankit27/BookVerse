@@ -1,34 +1,24 @@
 package com.bookverser.BookVerse.serviceimpl;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.modelmapper.ModelMapper;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import org.springframework.stereotype.Service;
-
-import com.bookverser.BookVerse.config.ModelMapperConfig;
 import com.bookverser.BookVerse.dto.AddToCartRequest;
 import com.bookverser.BookVerse.dto.CartItemDto;
 import com.bookverser.BookVerse.dto.CartResponseDto;
 import com.bookverser.BookVerse.dto.CheckoutRequest;
-
 import com.bookverser.BookVerse.dto.OrderDTO;
-import com.bookverser.BookVerse.dto.OrderResponseDto;
-
 import com.bookverser.BookVerse.dto.UpdateCartRequest;
 import com.bookverser.BookVerse.entity.Address;
 import com.bookverser.BookVerse.entity.Book;
 import com.bookverser.BookVerse.entity.Cart;
 import com.bookverser.BookVerse.entity.CartItem;
+import com.bookverser.BookVerse.entity.Order;
+import com.bookverser.BookVerse.entity.OrderItem;
 import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.BookNotFoundException;
 import com.bookverser.BookVerse.exception.CartItemNotFoundException;
@@ -42,31 +32,36 @@ import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.service.CartService;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 @Service
-
-@RequiredArgsConstructor
-
 public class CartServiceImpl implements CartService {
 
-    private final BookRepository bookRepository;
-    private final CartRepository cartRepository;
-    private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
-    private final ModelMapperConfig modelMapperConfig;
-    private final AddressRepository addressRepository;
-    
+    @Autowired
+    private BookRepository bookRepository;
 
-    private final ModelMapper modelMapper;
+    @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     /**
      * Add book to cart
      */
     @Override
+    @Transactional
     public CartResponseDto addToCart(Long customerId, AddToCartRequest request) {
         User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
         Book book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new BookNotFoundException("Book not found with id: " + request.getBookId()));
@@ -130,6 +125,7 @@ public class CartServiceImpl implements CartService {
      * Remove item from cart
      */
     @Override
+    @Transactional
     public Map<String, Object> removeCartItem(Long customerId, Long bookId) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
@@ -153,44 +149,24 @@ public class CartServiceImpl implements CartService {
 
         cartRepository.save(cart);
 
-        // Map cart items to DTO
+        // Manual mapping for consistency
         List<CartItemDto> itemsDto = cart.getCartItems().stream()
-                .map(item -> modelMapper.map(item, CartItemDto.class))
+                .map(item -> {
+                    BigDecimal price = item.getBook().getPrice();
+                    BigDecimal total = price.multiply(BigDecimal.valueOf(item.getQuantity()));
+                    return CartItemDto.builder()
+                            .id(item.getId())
+                            .bookId(item.getBook().getId())
+                            .author(item.getBook().getAuthor())
+                            .title(item.getBook().getTitle())
+                            .quantity(item.getQuantity())
+                            .price(price)
+                            .total(total)
+                            .build();
+                })
                 .toList();
 
         // Build response map
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Book removed from cart successfully");
-        response.put("cartId", cart.getId());
-        response.put("customerId", customer.getId());
-        response.put("totalPrice", cart.getTotalPrice());
-        response.put("items", itemsDto);
-
-        return response;
-    }
-
-        Cart cart = cartRepository.findByCustomer(customer)
-                .orElseThrow(() -> new CartItemNotFoundException("Cart not found for customer"));
-
-        CartItem cartItem = cart.getCartItems().stream()
-                .filter(item -> item.getBook().getId().equals(bookId))
-                .findFirst()
-                .orElseThrow(() -> new CartItemNotFoundException(
-                        "Book with id " + bookId + " not found in cart"));
-
-        cart.getCartItems().remove(cartItem);
-
-        BigDecimal newTotal = cart.getCartItems().stream()
-                .map(item -> item.getBook().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        cart.setTotalPrice(newTotal);
-        cartRepository.save(cart);
-
-        List<CartItemDto> itemsDto = cart.getCartItems().stream()
-                .map(item -> modelMapper.map(item, CartItemDto.class))
-                .toList();
-
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Book removed from cart successfully");
         response.put("cartId", cart.getId());
@@ -205,6 +181,7 @@ public class CartServiceImpl implements CartService {
      * Update cart item quantity
      */
     @Override
+    @Transactional
     public CartItemDto updateCartItem(Long customerId, Long bookId, UpdateCartRequest request) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
@@ -254,91 +231,6 @@ public class CartServiceImpl implements CartService {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
-
-      
-
-	
-	
-
-	@Override
-	public CartResponseDto getCartItems(Long buyerId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-    public Object checkoutCart(Long customerId, CheckoutRequest request) {
-        // 1️⃣ Load customer
-        User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-
-        // 2️⃣ Load cart
-        Cart cart = cartRepository.findByCustomer(customer)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
-
-        if (cart.getCartItems().isEmpty()) {
-            throw new RuntimeException("Cart is empty. Cannot checkout.");
-        }
-
-        // 3️⃣ Load shipping address
-        Address shippingAddress = addressRepository.findByIdAndUser(request.getShippingAddressId(), customer)
-                .orElseThrow(() -> new RuntimeException("Address not found for this customer"));
-
-        // 4️⃣ Validate stock
-        cart.getCartItems().forEach(item -> {
-            if (item.getQuantity() > item.getBook().getStock()) {
-                throw new RuntimeException("Insufficient stock for book: " + item.getBook().getTitle());
-            }
-        });
-
-        // 5️⃣ Create orders
-        List<OrderDTO> orders = new ArrayList<>();
-        for (CartItem item : cart.getCartItems()) {
-            Order order = Order.builder()
-                    .customer(customer)
-                    .cart(cart)
-                    .shippingAddress(shippingAddress)
-                    .status(Order.Status.PENDING)
-                    .paymentStatus(request.getPaymentMethod().equalsIgnoreCase("COD")
-                            ? Order.PaymentStatus.COD : Order.PaymentStatus.PAID)
-                    .totalPrice(item.getBook().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                    .build();
-
-            OrderItem orderItem = OrderItem.builder()
-                    .order(order)
-                    .book(item.getBook())
-                    .seller(item.getBook().getSeller())
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getBook().getPrice())
-                    .build();
-
-            order.getOrderItems().add(orderItem);
-            orderRepository.save(order);
-
-            // ✅ Map with ModelMapper
-            OrderDTO dto = modelMapper.map(order, OrderDTO.class);
-            dto.setBuyerId(customer.getId());
-            dto.setBookId(item.getBook().getId());
-            dto.setSellerId(item.getBook().getSeller().getId());
-            orders.add(dto);
-        }
-
-        // 6️⃣ Clear cart
-        cart.getCartItems().clear();
-        cart.setTotalPrice(BigDecimal.ZERO);
-        cartRepository.save(cart);
-
-        return (Object) orders; // ✅ Object type, but actually returns List<OrderDTO>
-    }
-	
-	
-	@Override
-	public CartResponseDto clearCart(Long customerId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
         Cart cart = cartRepository.findByCustomer(customer)
                 .orElseThrow(() -> new CartItemNotFoundException("Cart not found"));
 
@@ -370,6 +262,7 @@ public class CartServiceImpl implements CartService {
      * Clear cart
      */
     @Override
+    @Transactional
     public CartResponseDto clearCart(Long customerId) {
         User customer = userRepository.findById(customerId)
                 .orElseThrow(() -> new UnauthorizedException("Customer not found"));
@@ -391,11 +284,70 @@ public class CartServiceImpl implements CartService {
     }
 
     /**
-     * Checkout (not implemented yet)
+     * Checkout cart
      */
     @Override
-    public Object checkoutCart(Long customerId, CheckoutRequest request) {
-        return null; // implement later
-    }
+    @Transactional
+    public List<OrderDTO> checkoutCart(Long customerId, CheckoutRequest request) {
+        // 1️⃣ Load customer
+        User customer = userRepository.findById(customerId)
+                .orElseThrow(() -> new UnauthorizedException("Customer not found"));
 
+        // 2️⃣ Load cart
+        Cart cart = cartRepository.findByCustomer(customer)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
+
+        if (cart.getCartItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty. Cannot checkout.");
+        }
+
+        // 3️⃣ Load shipping address
+        Address shippingAddress = addressRepository.findByIdAndUser(request.getShippingAddressId(), customer)
+                .orElseThrow(() -> new RuntimeException("Address not found for this customer"));
+
+        // 4️⃣ Validate stock
+        cart.getCartItems().forEach(item -> {
+            if (item.getQuantity() > item.getBook().getStock()) {
+                throw new RuntimeException("Insufficient stock for book: " + item.getBook().getTitle());
+            }
+        });
+
+        // 5️⃣ Create orders
+        List<OrderDTO> orders = new ArrayList<>();
+        for (CartItem item : cart.getCartItems()) {
+            Order order = Order.builder()
+                    .customer(customer)
+                    .shippingAddress(shippingAddress)
+                    .status(Order.Status.PENDING)
+                    .paymentStatus(request.getPaymentMethod().equalsIgnoreCase("COD")
+                            ? Order.PaymentStatus.COD : Order.PaymentStatus.PAID)
+                    .totalPrice(item.getBook().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                    .build();
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .book(item.getBook())
+                    .seller(item.getBook().getSeller())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getBook().getPrice())
+                    .build();
+
+            order.getOrderItems().add(orderItem);
+            Order savedOrder = orderRepository.save(order);
+
+            // ✅ Map with ModelMapper
+            OrderDTO dto = modelMapper.map(savedOrder, OrderDTO.class);
+            dto.setBuyerId(customer.getId());
+            dto.setBookId(item.getBook().getId());
+            dto.setSellerId(item.getBook().getSeller().getId());
+            orders.add(dto);
+        }
+
+        // 6️⃣ Clear cart
+        cart.getCartItems().clear();
+        cart.setTotalPrice(BigDecimal.ZERO);
+        cartRepository.save(cart);
+
+        return orders;
+    }
 }
