@@ -4,32 +4,40 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import jakarta.validation.Valid;
+
 
 import com.bookverser.BookVerse.dto.BookDto;
 import com.bookverser.BookVerse.dto.CreateBookRequestDTO;
 import com.bookverser.BookVerse.dto.UpdateBookRequestDTO;
 import com.bookverser.BookVerse.dto.UpdateStockRequestDTO;
+import com.bookverser.BookVerse.entity.Book;
 import com.bookverser.BookVerse.exception.DuplicateIsbnException;
 import com.bookverser.BookVerse.exception.InvalidRequestException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.UserRepository;
 import com.bookverser.BookVerse.serviceimpl.BookServiceImpl;
 
-import jakarta.validation.Valid;
+
 
 @RestController
 @RequestMapping("/api/books")
 public class BookController {
-
+  
+	
+	
+	
     @Autowired
     private BookServiceImpl bookServiceImpl;
 
@@ -40,13 +48,17 @@ public class BookController {
     @PostMapping("/add")
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
     public ResponseEntity<?> addBook(@Valid @RequestBody CreateBookRequestDTO request, Authentication authentication) {
-        BookDto createdBook = bookServiceImpl.addBook(request);
+      
+    	    
+    	BookDto createdBook = bookServiceImpl.addBook(request);
+    
         return ResponseEntity.ok(createdBook);
     }
 
     // ------------------- Get Book by ID -------------------
     @GetMapping("/{bookId}")
     public ResponseEntity<BookDto> getBookById(@PathVariable Long bookId) {
+    	System.out.println("");
         BookDto bookdto = bookServiceImpl.getBookById(bookId);
         return ResponseEntity.ok(bookdto);
     }
