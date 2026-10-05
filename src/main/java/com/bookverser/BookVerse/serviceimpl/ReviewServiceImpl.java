@@ -1,105 +1,130 @@
 package com.bookverser.BookVerse.serviceimpl;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
 
 import com.bookverser.BookVerse.dto.ReviewDTO;
 import com.bookverser.BookVerse.entity.Book;
-import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.entity.Review;
+import com.bookverser.BookVerse.entity.User;
 import com.bookverser.BookVerse.exception.BookNotFoundException;
 import com.bookverser.BookVerse.exception.InvalidReviewException;
 import com.bookverser.BookVerse.exception.UnauthorizedException;
 import com.bookverser.BookVerse.repository.BookRepository;
+import com.bookverser.BookVerse.repository.OrderItemRepository;
 import com.bookverser.BookVerse.repository.ReviewRepository;
 import com.bookverser.BookVerse.repository.UserRepository;
-import com.bookverser.BookVerse.repository.OrderItemRepository;
 import com.bookverser.BookVerse.service.ReviewService;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ReviewServiceImpl implements ReviewService {
 
-    @Autowired
-    private ReviewRepository reviewRepository;
+    private final ReviewRepository reviewRepository;
+    private final BookRepository bookRepository;
+    private final UserRepository userRepository;
+    private final OrderItemRepository orderItemRepository;
 
-    @Autowired
-    private BookRepository bookRepository;
+    public ReviewServiceImpl(
+            ReviewRepository reviewRepository,
+            BookRepository bookRepository,
+            UserRepository userRepository,
+            OrderItemRepository orderItemRepository) {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private OrderItemRepository orderItemRepository;
-
-    @Autowired
-    private ModelMapper modelMapper;
+        this.reviewRepository = reviewRepository;
+        this.bookRepository = bookRepository;
+        this.userRepository = userRepository;
+        this.orderItemRepository = orderItemRepository;
+    }
 
     @Override
-    public ReviewDTO addReview(Long bookId, Long customerId, int rating, String comment) {
-        // 1️⃣ Validate customer
+    public ReviewDTO addReview(
+            Long bookId,
+            Long customerId,
+            int rating,
+            String comment) throws InvalidReviewException  {
+
+        // 1. Validate customer
         User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new UnauthorizedException("Customer not found or unauthorized."));
+                .orElseThrow(() ->
+                        new UnauthorizedException(
+                                "Customer not found or unauthorized."));
 
-        // 2️⃣ Validate book
+        // 2. Validate book
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new BookNotFoundException("Book not found."));
+                .orElseThrow(() ->
+                        new BookNotFoundException(
+                                "Book not found."));
 
-        // 3️⃣ Check if customer purchased the book
-        boolean hasPurchased = orderItemRepository.existsByCustomerAndBook(customer, book);
+        // 3. Check if customer purchased the book
+        boolean hasPurchased =
+                orderItemRepository.existsByCustomerAndBook(
+                        customer,
+                        book);
+
         if (!hasPurchased) {
-            throw new UnauthorizedException("You must purchase this book before reviewing it.");
+            throw new UnauthorizedException(
+                    "You must purchase this book before reviewing it.");
         }
 
-        // 4️⃣ Validate rating
+        // 4. Validate rating
         if (rating < 1 || rating > 5) {
-            throw new InvalidReviewException("Rating must be between 1 and 5.");
+            throw new InvalidReviewException(
+                    "Rating must be between 1 and 5.");
         }
 
-        // 5️⃣ Validate comment
+        // 5. Validate comment
         if (comment != null && comment.length() > 500) {
-            throw new InvalidReviewException("Comment must be less than 500 characters.");
+            throw new InvalidReviewException(
+                    "Comment must be less than 500 characters.");
         }
 
-        // 6️⃣ Prevent duplicate reviews
+        // 6. Prevent duplicate reviews
         if (reviewRepository.existsByBookAndUser(book, customer)) {
-            throw new InvalidReviewException("You have already reviewed this book.");
+            throw new InvalidReviewException(
+                    "You have already reviewed this book.");
         }
 
-        // 7️⃣ Save review
+        // 7. Create review
         Review review = new Review();
+
         review.setBook(book);
         review.setUser(customer);
         review.setRating(rating);
         review.setComment(comment);
 
-        Review saved = reviewRepository.save(review);
+        Review savedReview = reviewRepository.save(review);
 
-        // 8️⃣ Convert to DTO
+        // 8. Convert to DTO
         ReviewDTO dto = new ReviewDTO();
-        dto.setReviewId(saved.getId());
+
+        dto.setReviewId(savedReview.getId());
         dto.setBookId(book.getId());
         dto.setCustomerId(customer.getId());
         dto.setCustomerName(customer.getName());
         dto.setCustomerEmail(customer.getEmail());
-        dto.setRating(saved.getRating());
-        dto.setComment(saved.getComment());
-        dto.setCreatedAt(saved.getCreatedAt());
+        dto.setRating(savedReview.getRating());
+        dto.setComment(savedReview.getComment());
+        dto.setCreatedAt(savedReview.getCreatedAt());
 
         return dto;
     }
 
     @Override
     public List<ReviewDTO> getReviewsByBookId(Long bookId) {
+
+        // Validate book
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new BookNotFoundException("Book not found."));
+                .orElseThrow(() ->
+                        new BookNotFoundException(
+                                "Book not found."));
 
         return reviewRepository.findByBook(book)
                 .stream()
                 .map(review -> {
+
                     ReviewDTO dto = new ReviewDTO();
+
                     dto.setReviewId(review.getId());
                     dto.setBookId(book.getId());
                     dto.setCustomerId(review.getUser().getId());
@@ -108,6 +133,7 @@ public class ReviewServiceImpl implements ReviewService {
                     dto.setRating(review.getRating());
                     dto.setComment(review.getComment());
                     dto.setCreatedAt(review.getCreatedAt());
+
                     return dto;
                 })
                 .collect(Collectors.toList());

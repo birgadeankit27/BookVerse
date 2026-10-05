@@ -58,7 +58,7 @@ public class GlobalException {
         InvalidAddressException.class,
 
 
-        InvalidReturnRequestException.class  
+        InvalidReturnRequestException.class ,
 
         RefundNotAllowedException.class,
         InvalidCategoryNameException.class,
